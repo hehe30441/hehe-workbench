@@ -2310,41 +2310,64 @@ function init(){
 init();
 </script>
 
-<!-- PWA 安装提示 V3 - 书签方案 -->
+<!-- 快捷指令方案引导 V4 -->
 <style>
-  #pwa-banner-v3{display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;background:linear-gradient(to top,#1a1a2e,#16213e);color:#fff;padding:18px 16px;border-radius:20px 20px 0 0;box-shadow:0 -4px 30px rgba(0,0,0,0.4);font-family:-apple-system,'Helvetica Neue',sans-serif;text-align:center;animation:slideUp .4s ease;}
-  @keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
-  #pwa-banner-v3 .title{font-size:17px;font-weight:bold;margin-bottom:6px;}
-  #pwa-banner-v3 .desc{font-size:12px;opacity:.75;margin-bottom:14px;line-height:1.5;}
-  #pwa-banner-v3 .steps{background:rgba(255,255,255,.08);border-radius:12px;padding:14px;text-align:left;font-size:13px;line-height:2.2;margin-bottom:14px;}
-  #pwa-banner-v3 .btn-row{display:flex;gap:10px;justify-content:center;}
-  #pwa-banner-v3 button{border:none;border-radius:20px;padding:10px 22px;font-size:14px;font-weight:600;cursor:pointer;}
-  #pwa-banner-v3 .btn-primary{background:linear-gradient(135deg,#11998e,#38ef7d);color:#fff;box-shadow:0 2px 10px rgba(56,239,125,.3);}
-  #pwa-banner-v3 .btn-ghost{background:transparent;color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.2);padding:8px 18px;font-size:12px;}
+  #sc-banner{display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;background:linear-gradient(160deg,#0f2027,#203a43,#2c5364);color:#fff;padding:20px 16px;border-radius:24px 24px 0 0;box-shadow:0 -6px 40px rgba(0,0,0,.5);font-family:-apple-system,'PingFang SC',sans-serif;text-align:center;max-height:80vh;overflow-y:auto;}
+  #sc-banner .t{font-size:18px;font-weight:800;margin-bottom:4px;}
+  #sc-banner .d{font-size:12px;opacity:.8;margin-bottom:16px;line-height:1.6;}
+  #sc-banner .card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:16px;text-align:left;margin-bottom:14px;}
+  #sc-banner .card h4{margin:0 0 10px;font-size:14px;color:#7ed6df;display:flex;align-items:center;gap:6px;}
+  #sc-banner .card ol{margin:0;padding-left:18px;font-size:13px;line-height:2;opacity:.95;}
+  #sc-banner .copy-box{display:flex;gap:8px;align-items:center;background:rgba(0,0,0,.3);border-radius:10px;padding:8px 12px;margin:8px 0;font-size:11px;word-break:break-all;color:#aef;}
+  #sc-banner .copy-btn{flex-shrink:0;background:#7ed6df;color:#0f2027;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+  #sc-banner .row{display:flex;gap:10px;justify-content:center;margin-top:6px;}
+  #sc-banner button.act{border:none;border-radius:22px;padding:11px 26px;font-size:14px;font-weight:700;cursor:pointer;}
+  #sc-banner .go{background:linear-gradient(135deg,#11998e,#38ef7d);color:#fff;box-shadow:0 3px 14px rgba(56,239,125,.35);}
+  #sc-banner .no{background:transparent;color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.2);padding:9px 20px;font-size:12px;}
 </style>
-<div id="pwa-banner-v3">
-  <div class="title">⭐ 将"贺贺"添加到桌面</div>
-  <div class="desc">不用找分享按钮！用下面这个方法，效果一样 🎉</div>
-  <div class="steps">
-    <div>① 点 Safari 底部右边的 <b>「⋯」</b> 按钮</div>
-    <div>② 选择 <b>「将书签添加到…」</b></div>
-  <div>③ 位置选 <b>「主屏幕」</b>（不是收藏夹）</div>
-    <div>④ 名称改成 <b>「贺贺」</b> → 保存 ✅</div>
+<div id="sc-banner">
+  <div class="t">⭐ 把"贺贺"做成桌面 App 图标</div>
+  <div class="d">你的 Safari 没有"添加到主屏幕"选项，我们用 iPhone 自带的<br><b>「快捷指令」</b> 来生成一个真正的桌面 App 图标 📱</div>
+
+  <div class="card">
+    <h4>📋 第一步：复制这两个信息</h4>
+    <div style="font-size:12px;opacity:.8;margin-bottom:6px;">① 工作台网址（点击图标后打开的页面）：</div>
+    <div class="copy-box"><span id="sc-url">https://hehe30441.github.io/hehe-workbench/</span><button class="copy-btn" onclick="navigator.clipboard.writeText('https://hehe30441.github.io/hehe-workbench/');this.textContent='已复制';setTimeout(()=>this.textContent='复制',1500);">复制</button></div>
+    <div style="font-size:12px;opacity:.8;margin-bottom:6px;">② 图标图片网址（桌面显示的星星图标）：</div>
+    <div class="copy-box"><span id="sc-icon">https://hehe30441.github.io/hehe-workbench/icon.png</span><button class="copy-btn" onclick="navigator.clipboard.writeText('https://hehe30441.github.io/hehe-workbench/icon.png');this.textContent='已复制';setTimeout(()=>this.textContent='复制',1500);">复制</button></div>
   </div>
-  <div class="btn-row">
-    <button class="btn-primary" onclick="document.getElementById('pwa-banner-v3').style.display='none';localStorage.setItem('hehe_pwa_dismissed','1');">👌 我去试试</button>
-    <button class="btn-ghost" onclick="document.getElementById('pwa-banner-v3').style.display='none';localStorage.setItem('hehe_pwa_dismissed','1');">不再提醒</button>
+
+  <div class="card">
+    <h4>🛠 第二步：在「快捷指令」App 里创建</h4>
+    <ol>
+      <li>打开 iPhone 自带的 <b>「快捷指令」</b> App（灰色齿轮图标）</li>
+      <li>点右上角 <b>「+」</b> → 选 <b>「添加操作」</b></li>
+      <li>搜索 <b>「打开 URL」</b> → 添加，粘贴上面的<b>网址①</b></li>
+      <li>点顶部名称 → 改成 <b>「贺贺」</b></li>
+      <li>点 <b>「⋯」</b> → 开启 <b>「在共享表单中显示」</b></li>
+      <li>再点 <b>「添加到主屏幕」</b> → 选<b>图标网址②</b>做图标 → 添加</li>
+    </ol>
+  </div>
+
+  <div class="card" style="background:rgba(126,214,223,.1);">
+    <h4>✅ 完成后效果</h4>
+    <div style="font-size:13px;line-height:1.8;opacity:.95;">桌面出现 <b>「贺贺」</b> 星星图标 → 点开后<b>全屏进入工作台</b>，无浏览器地址栏，和 App 一样用。</div>
+  </div>
+
+  <div class="row">
+    <button class="act go" onclick="document.getElementById('sc-banner').style.display='none';localStorage.setItem('hehe_sc_done','1');">👌 我明白了</button>
+    <button class="act no" onclick="document.getElementById('sc-banner').style.display='none';localStorage.setItem('hehe_sc_done','1');">不再提醒</button>
   </div>
 </div>
 <script>
 (function(){
-  if(localStorage.getItem('hehe_pwa_dismissed'))return;
-  var b=document.getElementById('pwa-banner-v3');
+  if(localStorage.getItem('hehe_sc_done'))return;
+  var b=document.getElementById('sc-banner');
   if(!b)return;
   var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
   var isSA=(window.navigator.standalone===true);
   var isSD=window.matchMedia('(display-mode:standalone)').matches;
-  if(!isSA&&!isSD){setTimeout(function(){b.style.display='block';},2000);}
+  if(isIOS&&!isSA&&!isSD){setTimeout(function(){b.style.display='block';},1800);}
 })();
 </script>
 </body>
