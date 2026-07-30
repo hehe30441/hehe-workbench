@@ -1,0 +1,2329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="贺贺🎉🔆💐">
+<meta name="theme-color" content="#d4e4d4">
+<meta name="description" content="贺贺的个人生活管理工作台 - 今日概览、记账、倒计时、阅读、任务、选题、脚本、复盘、热点">
+<title>贺贺🎉🔆💐 工作台</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"贺贺工作台","short_name":"贺贺","start_url":".","display":"standalone","background_color":"#f5f3e7","theme_color":"#d4e4d4","icons":[{"src":"data:image/svg%2Bxml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 192 192%27%3E%3Crect width=%27192%27 height=%27192%27 fill=%27%23d4e4d4%27/%3E%3Ctext x=%2796%27 y=%27110%27 font-size=%2780%27 text-anchor=%27middle%27%3E%F0%9F%8E%89%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script src="xlsx.full.min.js"></script>
+<style>
+:root{
+  /* 莫兰迪色系 - 淡绿淡黄主题 */
+  --bg-main:#f5f3e7;        /* 米黄底 */
+  --bg-card:#fdfbf3;        /* 卡片白 */
+  --bg-sidebar:#e8ead8;     /* 侧边绿 */
+  --bg-sidebar-hover:#dfe2cf;
+  --green-soft:#c8d4b8;     /* 淡绿 */
+  --green-deep:#7a8c6a;     /* 深莫兰迪绿 */
+  --yellow-soft:#f0e2a9;    /* 淡黄 */
+  --yellow-deep:#b8a96e;    /* 深莫兰迪黄 */
+  --pink-soft:#e8c8c8;      /* 淡粉 */
+  --blue-soft:#bccdd4;      /* 淡蓝灰 */
+  --purple-soft:#cab8d4;    /* 淡紫灰 */
+  --orange-soft:#e8d4b8;    /* 淡橙 */
+  --text-main:#4a4a3e;      /* 主文字 */
+  --text-sub:#8a8a78;       /* 次文字 */
+  --text-light:#b0b0a0;
+  --border:#e0dec8;
+  --shadow:0 2px 8px rgba(122,140,106,.08);
+  --shadow-hover:0 4px 16px rgba(122,140,106,.15);
+  --radius:14px;
+  --radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg-main);
+  color:var(--text-main);
+  font-size:15px;
+  line-height:1.6;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea,select{font-family:inherit;font-size:14px;color:var(--text-main)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:var(--green-soft);border-radius:3px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ===== 布局 ===== */
+.app{display:flex;height:100vh}
+.sidebar{
+  width:240px;
+  background:var(--bg-sidebar);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  transition:width .28s cubic-bezier(.4,0,.2,1);
+  flex-shrink:0;
+  overflow:hidden;
+}
+.sidebar.collapsed{width:64px}
+.sidebar-header{
+  padding:18px 16px;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--border);
+  min-height:64px;
+}
+.logo{font-size:22px;white-space:nowrap}
+.logo-text{font-weight:700;font-size:17px;white-space:nowrap;color:var(--green-deep)}
+.sidebar.collapsed .logo-text{display:none}
+.sidebar-toggle{
+  margin-left:auto;
+  width:28px;height:28px;border-radius:50%;
+  background:var(--green-soft);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:var(--green-deep);
+  flex-shrink:0;
+}
+.sidebar.collapsed .sidebar-toggle{margin:0 auto}
+
+.nav{flex:1;overflow-y:auto;padding:10px 8px}
+.nav-item{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 14px;margin-bottom:3px;
+  border-radius:var(--radius-sm);
+  cursor:pointer;
+  color:var(--text-main);
+  transition:all .18s;
+  white-space:nowrap;
+  position:relative;
+}
+.nav-item:hover{background:var(--bg-sidebar-hover)}
+.nav-item.active{background:var(--green-soft);color:var(--green-deep);font-weight:600}
+.nav-icon{font-size:18px;width:22px;text-align:center;flex-shrink:0}
+.nav-label{flex:1;overflow:hidden;text-overflow:ellipsis}
+.sidebar.collapsed .nav-label{display:none}
+.nav-toggle{
+  font-size:12px;color:var(--text-light);
+  opacity:0;transition:opacity .2s;
+  flex-shrink:0;
+}
+.nav-item:hover .nav-toggle{opacity:1}
+.sidebar.collapsed .nav-toggle{display:none}
+
+.sidebar-footer{
+  padding:10px 8px;border-top:1px solid var(--border);
+}
+.sidebar-footer .nav-item{font-size:13px;color:var(--text-sub)}
+
+.main{
+  flex:1;
+  overflow-y:auto;
+  padding:24px 28px;
+  -webkit-overflow-scrolling:touch;
+}
+.module{display:none;animation:fadein .3s ease}
+.module.active{display:block}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.page-title{
+  font-size:22px;font-weight:700;
+  color:var(--text-main);
+  margin-bottom:4px;
+  display:flex;align-items:center;gap:10px;
+}
+.page-sub{color:var(--text-sub);font-size:13px;margin-bottom:20px}
+
+/* ===== 通用组件 ===== */
+.card{
+  background:var(--bg-card);
+  border-radius:var(--radius);
+  padding:18px;
+  box-shadow:var(--shadow);
+  border:1px solid var(--border);
+}
+.card-title{
+  font-size:15px;font-weight:600;
+  margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+  color:var(--text-main);
+}
+.card-title .act{margin-left:auto;display:flex;gap:6px}
+
+.btn{
+  padding:7px 14px;
+  border-radius:var(--radius-sm);
+  background:var(--green-soft);
+  color:var(--green-deep);
+  font-size:13px;font-weight:500;
+  transition:all .15s;
+  white-space:nowrap;
+}
+.btn:hover{filter:brightness(.95);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-yellow{background:var(--yellow-soft);color:var(--yellow-deep)}
+.btn-pink{background:var(--pink-soft);color:#a87878}
+.btn-blue{background:var(--blue-soft);color:#5a7080}
+.btn-purple{background:var(--purple-soft);color:#7a6890}
+.btn-orange{background:var(--orange-soft);color:#a8855a}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-sub)}
+.btn-ghost:hover{background:var(--bg-sidebar-hover)}
+.btn-danger{background:#f0d4d4;color:#a85050}
+
+.input,.textarea,.select{
+  width:100%;
+  padding:8px 12px;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  background:var(--bg-card);
+  font-size:14px;
+  transition:border-color .15s;
+}
+.input:focus,.textarea:focus,.select:focus{outline:none;border-color:var(--green-deep)}
+.textarea{resize:vertical;min-height:70px;line-height:1.5}
+.label{display:block;font-size:12px;color:var(--text-sub);margin-bottom:5px;margin-top:10px}
+.label:first-child{margin-top:0}
+
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row > *{flex:1;min-width:0}
+.grid{display:grid;gap:14px}
+.grid-2{grid-template-columns:repeat(2,1fr)}
+.grid-3{grid-template-columns:repeat(3,1fr)}
+.grid-4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:768px){
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .main{padding:16px}
+}
+
+/* checkbox */
+.cbox{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:10px 12px;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  background:var(--bg-card);
+  margin-bottom:6px;
+  cursor:pointer;
+  transition:all .15s;
+}
+.cbox:hover{border-color:var(--green-soft)}
+.cbox.done{background:#f4f6ec;opacity:.65}
+.cbox.done .cbox-text{text-decoration:line-through;color:var(--text-sub)}
+.cbox-box{
+  width:20px;height:20px;border:2px solid var(--green-soft);
+  border-radius:5px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;color:var(--green-deep);
+  margin-top:1px;
+}
+.cbox.done .cbox-box{background:var(--green-soft)}
+.cbox-text{flex:1;word-break:break-word}
+.cbox-del{color:var(--text-light);font-size:14px;opacity:0;transition:opacity .15s}
+.cbox:hover .cbox-del{opacity:1}
+
+/* tag */
+.tag{
+  display:inline-block;padding:2px 9px;
+  border-radius:11px;font-size:11px;
+  background:var(--green-soft);color:var(--green-deep);
+  margin:2px;
+}
+.tag-y{background:var(--yellow-soft);color:var(--yellow-deep)}
+.tag-p{background:var(--pink-soft);color:#a87878}
+.tag-b{background:var(--blue-soft);color:#5a7080}
+.tag-o{background:var(--orange-soft);color:#a8855a}
+.tag-v{background:var(--purple-soft);color:#7a6890}
+
+/* empty */
+.empty{text-align:center;padding:32px 16px;color:var(--text-light);font-size:14px}
+
+/* modal */
+.modal-mask{
+  position:fixed;inset:0;background:rgba(74,74,62,.4);
+  display:none;align-items:center;justify-content:center;
+  z-index:100;padding:16px;
+  backdrop-filter:blur(2px);
+}
+.modal-mask.show{display:flex}
+.modal{
+  background:var(--bg-card);
+  border-radius:var(--radius);
+  padding:20px;
+  width:100%;max-width:520px;max-height:85vh;
+  overflow-y:auto;
+  box-shadow:0 8px 32px rgba(0,0,0,.15);
+}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.modal-title .close{margin-left:auto;font-size:22px;color:var(--text-light);line-height:1}
+
+/* toast */
+.toast{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);
+  background:var(--green-deep);color:#fff;
+  padding:10px 20px;border-radius:22px;
+  font-size:13px;z-index:200;
+  transition:transform .3s;
+  box-shadow:0 4px 16px rgba(0,0,0,.15);
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* progress */
+.progress{height:8px;background:var(--bg-sidebar);border-radius:4px;overflow:hidden}
+.progress-bar{height:100%;background:var(--green-soft);border-radius:4px;transition:width .4s}
+
+/* mobile sidebar */
+.mobile-bar{
+  display:none;
+  position:fixed;top:0;left:0;right:0;
+  background:var(--bg-sidebar);
+  border-bottom:1px solid var(--border);
+  padding:12px 16px;
+  z-index:50;
+  align-items:center;gap:10px;
+}
+.mobile-bar .menu-btn{font-size:22px}
+.mobile-bar .logo{font-size:20px}
+.mobile-bar .logo-text{font-weight:700;color:var(--green-deep)}
+@media(max-width:768px){
+  .mobile-bar{display:flex}
+  .app{padding-top:52px}
+  .sidebar{
+    position:fixed;top:52px;left:0;bottom:0;
+    z-index:40;transform:translateX(-100%);
+    width:240px;transition:transform .28s;
+  }
+  .sidebar.show{transform:none}
+  .sidebar.collapsed{width:240px}
+  .sidebar.collapsed .logo-text,.sidebar.collapsed .nav-label{display:inline}
+  .sidebar.collapsed .nav-toggle{display:none}
+  .main{padding:14px}
+}
+
+.stat-num{font-size:28px;font-weight:700;color:var(--green-deep)}
+.stat-label{font-size:12px;color:var(--text-sub);margin-top:2px}
+.stat-icon{font-size:24px}
+
+/* table */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th,.tbl td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)}
+.tbl th{color:var(--text-sub);font-weight:500;font-size:12px}
+.tbl tr:hover td{background:#f8f6ea}
+
+.badge{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+</style>
+</head>
+<body>
+
+<div class="mobile-bar">
+  <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('show')">☰</button>
+  <span class="logo">🎉</span>
+  <span class="logo-text">贺贺</span>
+</div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="logo">🎉🔆💐</span>
+      <span class="logo-text">贺贺工作台</span>
+      <button class="sidebar-toggle" onclick="toggleSidebar()">◀</button>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="sidebar-footer">
+      <div class="nav-item" onclick="openSettings()"><span class="nav-icon">⚙️</span><span class="nav-label">模块设置</span></div>
+      <div class="nav-item" onclick="exportAll()"><span class="nav-icon">💾</span><span class="nav-label">导出备份</span></div>
+      <div class="nav-item" onclick="importAll()"><span class="nav-icon">📥</span><span class="nav-label">导入恢复</span></div>
+    </div>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<div class="modal-mask" id="modalMask">
+  <div class="modal" id="modalBox"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ========================================================
+   贺贺工作台 - 核心数据层
+   全部数据存 localStorage，不上传任何服务器
+======================================================== */
+const DB = {
+  get(key, def){
+    try{ const v = localStorage.getItem('hehe_'+key); return v? JSON.parse(v) : def; }
+    catch(e){ return def; }
+  },
+  set(key, val){ localStorage.setItem('hehe_'+key, JSON.stringify(val)); },
+  del(key){ localStorage.removeItem('hehe_'+key); }
+};
+
+/* 模块定义 - 可自定义名称、可开关 */
+const MODULES_DEF = [
+  {id:'overview',   icon:'🏡', name:'今日概览',    desc:'一眼看今天的待办、记账、手工、创作'},
+  {id:'account',    icon:'💰', name:'记账',       desc:'手动记账+餐饮早午晚细分'},
+  {id:'countdown',  icon:'⏰', name:'重要日期',    desc:'倒计时提醒'},
+  {id:'schedule',   icon:'🗓️', name:'日程',       desc:'记录行程+月历视图'},
+  {id:'reading',    icon:'📚', name:'阅读打卡',    desc:'阅读进度追踪'},
+  {id:'tasks',      icon:'✅', name:'每日任务',    desc:'待办清单+打卡'},
+  {id:'inspire',    icon:'💡', name:'选题灵感',    desc:'视频拆解+选题库'},
+  {id:'script',     icon:'📝', name:'脚本创作',    desc:'口播模板+标题+标签'},
+  {id:'review',     icon:'📊', name:'数据复盘',    desc:'账号数据+优化方案'},
+  {id:'hotspot',    icon:'🔥', name:'热点雷达',    desc:'热点+选题匹配'},
+  {id:'xhs',        icon:'📕', name:'小红书热点',  desc:'联网热榜+本地收藏'},
+  {id:'toutiao',    icon:'📰', name:'今日头条热点',desc:'联网热榜+本地收藏'},
+  {id:'wechat',     icon:'💬', name:'公众号热点',  desc:'联网热榜+本地收藏'},
+  {id:'tutorial',   icon:'🎓', name:'教程分解',    desc:'视频教程拆解为步骤+数据'},
+  {id:'diary',      icon:'📔', name:'日记',       desc:'语音日记+密码保护'},
+];
+
+/* 记账分类 */
+const ACC_CATS = [
+  {id:'food',    name:'餐饮', icon:'🍚', color:'#c8d4b8', sub:[
+    {id:'breakfast', name:'早餐'},
+    {id:'lunch',     name:'午餐'},
+    {id:'dinner',    name:'晚餐'},
+    {id:'snack',     name:'零食饮品'},
+  ]},
+  {id:'commute',name:'通勤', icon:'🚌', color:'#bccdd4'},
+  {id:'craft',  name:'手工制作', icon:'✂️', color:'#e8d4b8'},
+  {id:'clothes',name:'衣物', icon:'👕', color:'#e8c8c8'},
+  {id:'fun',    name:'娱乐', icon:'🎮', color:'#cab8d4'},
+  {id:'medical',name:'医疗', icon:'💊', color:'#f0d4d4'},
+  {id:'edu',    name:'教育', icon:'📖', color:'#f0e2a9'},
+  {id:'other',  name:'其他', icon:'📦', color:'#d0d0c0'},
+];
+
+/* 当前激活模块 */
+let activeModule = 'overview';
+let settings = DB.get('settings', {modules: MODULES_DEF.map(m=>({id:m.id,name:m.name,enabled:true}))});
+
+/* === 工具函数 === */
+const $ = s => document.querySelector(s);
+const fmt = d => { const x=new Date(d); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; };
+const today = ()=> fmt(new Date());
+const uid = ()=> Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
+function daysBetween(d){ const t=new Date(d); const n=new Date(); n.setHours(0,0,0,0); t.setHours(0,0,0,0); return Math.round((t-n)/86400000); }
+
+function toggleSidebar(){
+  const sb=$('#sidebar');
+  if(window.innerWidth<=768){ sb.classList.toggle('show'); }
+  else{ sb.classList.toggle('collapsed'); }
+}
+
+/* === 渲染侧边栏 === */
+function renderNav(){
+  const nav=$('#nav');
+  nav.innerHTML = settings.modules.filter(m=>m.enabled).map(m=>{
+    const def = MODULES_DEF.find(d=>d.id===m.id);
+    return `<div class="nav-item ${activeModule===m.id?'active':''}" onclick="switchModule('${m.id}')">
+      <span class="nav-icon">${def.icon}</span>
+      <span class="nav-label">${m.name}</span>
+    </div>`;
+  }).join('');
+}
+
+function switchModule(id){
+  activeModule=id;
+  renderNav();
+  renderModule();
+  if(window.innerWidth<=768) $('#sidebar').classList.remove('show');
+}
+
+function renderModule(){
+  const main=$('#main');
+  const mod = settings.modules.find(m=>m.id===activeModule);
+  const def = MODULES_DEF.find(d=>d.id===activeModule);
+  main.innerHTML = `<div class="module active" id="m-${activeModule}">
+    <div class="page-title">${def.icon} ${mod.name}</div>
+    <div class="page-sub">${def.desc}</div>
+    <div id="moduleBody"></div>
+  </div>`;
+  const body=$('#moduleBody');
+  const r = {overview:renderOverview, account:renderAccount, countdown:renderCountdown,
+    schedule:renderSchedule, reading:renderReading, tasks:renderTasks, inspire:renderInspire,
+    script:renderScript, review:renderReview, hotspot:renderHotspot,
+    xhs:renderXhs, toutiao:renderToutiao, wechat:renderWechat,
+    tutorial:renderTutorial, diary:renderDiary}[activeModule];
+  if(r) r(body);
+}
+
+/* 模态框 */
+function openModal(title, contentHtml){
+  $('#modalBox').innerHTML = `<div class="modal-title">${title}<button class="close" onclick="closeModal()">×</button></div>${contentHtml}`;
+  $('#modalMask').classList.add('show');
+}
+function closeModal(){ $('#modalMask').classList.remove('show'); }
+$('#modalMask').addEventListener('click',e=>{ if(e.target===$('#modalMask')) closeModal(); });
+
+/* ========================================================
+   模块1: 今日概览
+======================================================== */
+function renderOverview(c){
+  const td = today();
+  const tasks = DB.get('tasks_'+td, []);
+  const doneTasks = tasks.filter(t=>t.done).length;
+  const accs = (DB.get('accounts',[])).filter(a=>a.date===td);
+  const todaySpent = accs.reduce((s,a)=>s+Number(a.amount),0);
+  const crafts = DB.get('crafts',[]);
+  const creates = DB.get('creates',[]);
+  const reads = DB.get('readings',[]).filter(r=>r.lastDate===td);
+  const cds = DB.get('countdowns',[]);
+  const upcoming = cds.map(c=>({c, d:daysBetween(c.date)})).filter(x=>x.d>=0).sort((a,b)=>a.d-b.d).slice(0,3);
+
+  c.innerHTML = `
+    <div class="grid grid-4" style="margin-bottom:18px">
+      <div class="card" style="background:linear-gradient(135deg,#d4e4d4,#c8d4b8)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div><div class="stat-num">${doneTasks}/${tasks.length}</div><div class="stat-label">今日任务</div></div>
+          <span class="stat-icon">✅</span>
+        </div>
+      </div>
+      <div class="card" style="background:linear-gradient(135deg,#f0e2a9,#e8d488)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div><div class="stat-num">¥${todaySpent.toFixed(1)}</div><div class="stat-label">今日花费</div></div>
+          <span class="stat-icon">💰</span>
+        </div>
+      </div>
+      <div class="card" style="background:linear-gradient(135deg,#e8d4b8,#dcc4a0)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div><div class="stat-num">${crafts.length}</div><div class="stat-label">手工进行中</div></div>
+          <span class="stat-icon">✂️</span>
+        </div>
+      </div>
+      <div class="card" style="background:linear-gradient(135deg,#cab8d4,#b8a4c8)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div><div class="stat-num">${creates.length}</div><div class="stat-label">创作选题</div></div>
+          <span class="stat-icon">📝</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-title">📋 今日待办 <span class="act"><button class="btn btn-sm" onclick="switchModule('tasks')">全部</button></span></div>
+        ${tasks.length? tasks.slice(0,5).map(t=>`<div class="cbox ${t.done?'done':''}" onclick="toggleTask('${t.id}')">
+          <div class="cbox-box">${t.done?'✓':''}</div>
+          <div class="cbox-text">${t.text}</div>
+        </div>`).join('') : '<div class="empty">今天还没有任务，去添加吧</div>'}
+      </div>
+
+      <div class="card">
+        <div class="card-title">⏰ 即将到来 <span class="act"><button class="btn btn-sm" onclick="switchModule('countdown')">全部</button></span></div>
+        ${upcoming.length? upcoming.map(x=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div><span style="font-size:16px">${x.c.icon||'📅'}</span> ${x.c.name}</div>
+          <div style="font-weight:600;color:${x.d<=3?'#a85050':x.d<=7?'#a8855a':'var(--green-deep)'}">${x.d===0?'今天':x.d+'天'}</div>
+        </div>`).join('') : '<div class="empty">还没有倒计时</div>'}
+      </div>
+
+      <div class="card">
+        <div class="card-title">💰 今日记账 <span class="act"><button class="btn btn-sm" onclick="switchModule('account')">详细</button></span></div>
+        ${accs.length? accs.map(a=>{const cat=ACC_CATS.find(c=>c.id===a.cat);return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><span class="badge" style="background:${cat?cat.color:'#ccc'}"></span>${cat?cat.name:'?'} ${a.note?'<span style="color:var(--text-sub);font-size:12px">'+a.note+'</span>':''}</div>
+          <div style="font-weight:600">¥${a.amount}</div>
+        </div>`}).join('') : '<div class="empty">今天还没有记账</div>'}
+      </div>
+
+      <div class="card">
+        <div class="card-title">📚 阅读与创作 <span class="act"><button class="btn btn-sm" onclick="switchModule('reading')">阅读</button><button class="btn btn-sm" onclick="switchModule('inspire')">选题</button></span></div>
+        <div style="padding:6px 0">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>📖 今日阅读</span><span style="color:var(--green-deep);font-weight:600">${reads.length? reads[0].book+' +'+reads[0].pages+'页' : '未打卡'}</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>✂️ 手工进度</span><span style="color:var(--green-deep);font-weight:600">${crafts.length? crafts[0].name+' '+crafts[0].progress+'%' : '无进行中'}</span></div>
+          <div style="display:flex;justify-content:space-between"><span>📝 选题库存</span><span style="color:var(--green-deep);font-weight:600">${creates.length} 个</span></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ========================================================
+   模块2: 记账
+======================================================== */
+function renderAccount(c){
+  const accs = DB.get('accounts',[]);
+  const td = today();
+  // 月份筛选
+  const curMonth = (window._accMonth)|| td.slice(0,7);
+  window._accMonth = curMonth;
+  const monthAccs = accs.filter(a=>a.date.startsWith(curMonth));
+  const total = monthAccs.reduce((s,a)=>s+Number(a.amount),0);
+
+  // 顶部三卡：本周/本月/本年 实时聚合（本地时区）
+  const weekSum = accSumRange(accs,'week');
+  const monthSum = accSumRange(accs,'month');
+  const yearSum = accSumRange(accs,'year');
+
+  // 今日记录
+  const todayAccs = accs.filter(a=>a.date===td).sort((a,b)=> (b.id||'').localeCompare(a.id||''));
+
+  c.innerHTML = `
+    <div class="grid grid-3" style="margin-bottom:16px">
+      <div class="card" style="background:linear-gradient(135deg,#d4e4d4,#c8d4b8)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div><div class="stat-num" style="font-size:24px">¥${weekSum.toFixed(2)}</div><div class="stat-label">本周支出</div></div>
+          <span class="stat-icon">🗓️</span>
+        </div>
+      </div>
+      <div class="card" style="background:linear-gradient(135deg,#f0e2a9,#e8d488)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div><div class="stat-num" style="font-size:24px">¥${monthSum.toFixed(2)}</div><div class="stat-label">本月支出</div></div>
+          <span class="stat-icon">📅</span>
+        </div>
+      </div>
+      <div class="card" style="background:linear-gradient(135deg,#cab8d4,#b8a4c8)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div><div class="stat-num" style="font-size:24px">¥${yearSum.toFixed(2)}</div><div class="stat-label">本年支出</div></div>
+          <span class="stat-icon">📆</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-bottom:14px;align-items:center">
+      <div style="flex:0 0 auto">
+        <input type="month" class="input" value="${curMonth}" onchange="window._accMonth=this.value;renderModule()">
+      </div>
+      <div style="flex:0 0 auto"><button class="btn" onclick="accAdd()">+ 记一笔</button></div>
+      <div style="flex:0 0 auto"><button class="btn btn-yellow" onclick="accExport()">导出Excel</button></div>
+    </div>
+
+    <div class="grid grid-2" style="margin-bottom:18px">
+      <div class="card">
+        <div class="card-title">📊 ${curMonth} 分类占比</div>
+        <div id="accChart" style="height:240px"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">💰 本月汇总</div>
+        <div style="font-size:30px;font-weight:700;color:var(--green-deep);margin-bottom:14px">¥ ${total.toFixed(2)}</div>
+        <div id="catList"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-title">📝 今日记录 (${td}) <span class="act"><span style="color:var(--text-sub);font-size:12px">${todayAccs.length}笔</span></span></div>
+      ${todayAccs.length? todayAccs.map(a=>{
+        const cat=ACC_CATS.find(c=>c.id===a.cat);
+        let subLabel='';
+        if(cat&&cat.sub){const sub=cat.sub.find(s=>s.id===a.sub);if(sub)subLabel=' / '+sub.name;}
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+          <div style="flex:1"><span class="badge" style="background:${cat?cat.color:'#ccc'}"></span>${cat?cat.name:''}${subLabel} ${a.note?'<span style="color:var(--text-sub);font-size:12px">· '+a.note+'</span>':''}</div>
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-weight:600">¥${a.amount}</span><button class="btn-ghost btn-sm" onclick="accDel('${a.id}')">删</button></div>
+        </div>`;
+      }).join('') : '<div class="empty">今天还没有记账</div>'}
+    </div>
+
+    <div class="card">
+      <div class="card-title">📒 流水明细 <span class="act"><span style="color:var(--text-sub);font-size:12px">${monthAccs.length}笔</span></span></div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>日期</th><th>分类</th><th>金额</th><th>备注</th><th></th></tr></thead>
+          <tbody>
+          ${monthAccs.sort((a,b)=>b.date.localeCompare(a.date)).map(a=>{
+            const cat=ACC_CATS.find(c=>c.id===a.cat);
+            let subLabel='';
+            if(cat&&cat.sub){const sub=cat.sub.find(s=>s.id===a.sub);if(sub)subLabel=' / '+sub.name;}
+            return `<tr>
+              <td>${a.date}</td>
+              <td><span class="badge" style="background:${cat?cat.color:'#ccc'}"></span>${cat?cat.name:''}${subLabel}</td>
+              <td style="font-weight:600">¥${a.amount}</td>
+              <td style="color:var(--text-sub)">${a.note||'-'}</td>
+              <td><button class="btn-ghost btn-sm" onclick="accDel('${a.id}')">删</button></td>
+            </tr>`;
+          }).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${monthAccs.length? '' : '<div class="empty">本月还没有记账</div>'}
+    </div>
+  `;
+
+  // 渲染分类列表
+  const catMap={};
+  monthAccs.forEach(a=>{ catMap[a.cat]=(catMap[a.cat]||0)+Number(a.amount); });
+  $('#catList').innerHTML = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).map(([cid,amt])=>{
+    const cat=ACC_CATS.find(c=>c.id===cid);
+    return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+      <div><span class="badge" style="background:${cat?cat.color:'#ccc'}"></span>${cat?cat.name:'?'}</div>
+      <div>¥${amt.toFixed(2)}</div>
+    </div>`;
+  }).join('') || '<div class="empty">无数据</div>';
+
+  // 图表
+  if(monthAccs.length && typeof echarts!=='undefined'){
+    setTimeout(()=>{
+      const ch=echarts.init($('#accChart'));
+      const data=Object.entries(catMap).map(([cid,amt])=>{
+        const cat=ACC_CATS.find(c=>c.id===cid);
+        return {name:cat?cat.name:cid, value:amt.toFixed(2), itemStyle:{color:cat?cat.color:'#ccc'}};
+      });
+      ch.setOption({
+        tooltip:{trigger:'item',formatter:'{b}: ¥{c} ({d}%)'},
+        series:[{type:'pie',radius:['40%','70%'],data,label:{formatter:'{b}\n¥{c}'}}]
+      });
+    },50);
+  }
+}
+
+function accAdd(){
+  const td=today();
+  let catOpts = ACC_CATS.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+  openModal('💰 记一笔', `
+    <div class="row">
+      <div><label class="label">金额</label><input type="number" step="0.01" class="input" id="ac-amount" placeholder="0.00" autofocus></div>
+      <div><label class="label">日期</label><input type="date" class="input" id="ac-date" value="${td}"></div>
+    </div>
+    <label class="label">分类</label>
+    <select class="select" id="ac-cat" onchange="accUpdateSub()">${catOpts}</select>
+    <div id="ac-sub-wrap"></div>
+    <label class="label">备注</label>
+    <input type="text" class="input" id="ac-note" placeholder="可选">
+    <div style="margin-top:16px;display:flex;gap:8px"><button class="btn" style="flex:1" onclick="accSave()">保存</button><button class="btn-ghost" onclick="closeModal()">取消</button></div>
+  `);
+  accUpdateSub();
+}
+function accUpdateSub(){
+  const catId=$('#ac-cat').value;
+  const cat=ACC_CATS.find(c=>c.id===catId);
+  const wrap=$('#ac-sub-wrap');
+  if(cat&&cat.sub){
+    wrap.innerHTML = '<label class="label">细分</label><select class="select" id="ac-sub">'+cat.sub.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')+'</select>';
+  } else { wrap.innerHTML=''; }
+}
+function accSave(){
+  const amount=parseFloat($('#ac-amount').value);
+  if(!amount||amount<=0){toast('请输入金额');return;}
+  const accs=DB.get('accounts',[]);
+  accs.push({id:uid(),amount,date:$('#ac-date').value,cat:$('#ac-cat').value,sub:$('#ac-sub')?$('#ac-sub').value:'',note:$('#ac-note').value});
+  DB.set('accounts',accs);
+  closeModal();renderModule();toast('已记账 ¥'+amount);
+}
+function accDel(id){
+  if(!confirm('删除这条记录?'))return;
+  DB.set('accounts',DB.get('accounts',[]).filter(a=>a.id!==id));
+  renderModule();toast('已删除');
+}
+/* 按本地时区聚合：week/month/year 区间支出 */
+function accSumRange(accs, range){
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  let from;
+  if(range==='year'){ from = new Date(y,0,1); }
+  else if(range==='month'){ from = new Date(y,m,1); }
+  else { // 本周（周一为起点）
+    const day = now.getDay()||7; // 周日=7
+    const monday = new Date(y,m,now.getDate()-day+1);
+    monday.setHours(0,0,0,0);
+    from = monday;
+  }
+  const fromStr = fmt(from);
+  return accs.filter(a=> a.date >= fromStr).reduce((s,a)=>s+Number(a.amount),0);
+}
+
+function accExport(){
+  const accs=DB.get('accounts',[]);
+  if(!accs.length){toast('暂无数据');return;}
+  const data=accs.map(a=>{
+    const cat=ACC_CATS.find(c=>c.id===a.cat);
+    let subName='';
+    if(cat&&cat.sub){const s=cat.sub.find(x=>x.id===a.sub);if(s)subName=s.name;}
+    return {日期:a.date,分类:cat?cat.name:'',细分:subName,金额:a.amount,备注:a.note||''};
+  });
+  const ws=XLSX.utils.json_to_sheet(data);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'记账');
+  XLSX.writeFile(wb,'贺贺记账_'+today()+'.xlsx');
+  toast('已导出');
+}
+
+/* ========================================================
+   模块3: 重要日期倒计时
+======================================================== */
+function renderCountdown(c){
+  const cds=DB.get('countdowns',[]);
+  const sorted=cds.map(x=>({x,d:daysBetween(x.date)})).sort((a,b)=>a.d-b.d);
+  c.innerHTML=`
+    <div style="margin-bottom:14px"><button class="btn" onclick="cdAdd()">+ 添加日期</button></div>
+    <div class="grid grid-3">
+      ${sorted.map(({x,d})=>{
+        const passed=d<0;
+        const color = passed?'#b0b0a0':d<=3?'#e8c8c8':d<=7?'#f0e2a9':'#c8d4b8';
+        return `<div class="card" style="background:linear-gradient(135deg,${color},${color}cc)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+            <span style="font-size:28px">${x.icon||'📅'}</span>
+            <button class="btn-ghost btn-sm" onclick="cdDel('${x.id}')">删</button>
+          </div>
+          <div style="font-size:16px;font-weight:700;margin-bottom:2px">${x.name}</div>
+          <div style="font-size:12px;color:var(--text-sub);margin-bottom:10px">${x.date}</div>
+          <div style="font-size:24px;font-weight:700;color:var(--text-main)">${passed?Math.abs(d)+'天前':d===0?'就在今天':d+'天'}</div>
+        </div>`;
+      }).join('') || '<div class="empty">还没有重要日期</div>'}
+    </div>
+  `;
+}
+function cdAdd(){
+  openModal('⏰ 添加重要日期',`
+    <label class="label">名称</label><input class="input" id="cd-name" placeholder="如：生日、纪念日" autofocus>
+    <div class="row"><div><label class="label">日期</label><input type="date" class="input" id="cd-date"></div>
+    <div><label class="label">图标(emoji)</label><input class="input" id="cd-icon" placeholder="🎂" value="📅"></div></div>
+    <div style="margin-top:16px"><button class="btn" style="width:100%" onclick="cdSave()">保存</button></div>
+  `);
+}
+function cdSave(){
+  const name=$('#cd-name').value.trim();
+  const date=$('#cd-date').value;
+  if(!name||!date){toast('请填写完整');return;}
+  const cds=DB.get('countdowns',[]);
+  cds.push({id:uid(),name,date,icon:$('#cd-icon').value||'📅'});
+  DB.set('countdowns',cds);closeModal();renderModule();toast('已添加');
+}
+function cdDel(id){
+  if(!confirm('删除?'))return;
+  DB.set('countdowns',DB.get('countdowns',[]).filter(c=>c.id!==id));
+  renderModule();
+}
+
+/* ========================================================
+   模块3.5: 日程（起止时间 + 月历）
+======================================================== */
+function renderSchedule(c){
+  const evs = DB.get('schedules',[]);
+  const now = new Date();
+  const ym = window._schMonth || (now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
+  window._schMonth = ym;
+  const [yy,mm] = ym.split('-').map(Number);
+  // 月历构建
+  const first = new Date(yy, mm-1, 1);
+  const startPad = (first.getDay()+6)%7; // 周一为第一列
+  const daysInMonth = new Date(yy, mm, 0).getDate();
+  const cells=[];
+  for(let i=0;i<startPad;i++)cells.push(null);
+  for(let d=1;d<=daysInMonth;d++)cells.push(d);
+  const td = today();
+  const monthEvs = evs.filter(e=> (e.date>=ym+'-01') && (e.date<=ym+'-'+String(daysInMonth).padStart(2,'0')) );
+  const byDay={};
+  monthEvs.forEach(e=>{ (byDay[e.date]=byDay[e.date]||[]).push(e); });
+
+  const calRows=[];
+  for(let i=0;i<cells.length;i+=7){
+    const week=cells.slice(i,i+7);
+    calRows.push(`<tr>${week.map(d=>{
+      if(d===null)return '<td style="padding:6px"></td>';
+      const ds=ym+'-'+String(d).padStart(2,'0');
+      const list=byDay[ds]||[];
+      const isToday=ds===td;
+      const isPast=new Date(ds)<new Date(td);
+      return `<td style="vertical-align:top;height:64px;border:1px solid var(--border);background:${isToday?'#f4f6ec':isPast?'#faf8f0':'var(--bg-card)'};border-radius:6px;padding:4px">
+        <div style="font-size:12px;color:${isToday?'var(--green-deep)':'var(--text-sub)'};font-weight:${isToday?'700':'400'}">${d}</div>
+        ${list.slice(0,2).map(e=>`<div style="font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:${e.color||'#c8d4b8'};color:#fff;border-radius:3px;padding:1px 3px;margin-top:2px">${e.timeStart||''} ${e.title}</div>`).join('')}
+        ${list.length>2?`<div style="font-size:10px;color:var(--text-sub)">+${list.length-2}</div>`:''}
+      </td>`;
+    }).join('')}</tr>`);
+  }
+
+  c.innerHTML=`
+    <div class="row" style="margin-bottom:14px;align-items:center">
+      <div style="flex:0 0 auto">
+        <button class="btn btn-ghost" onclick="schShift(-1)">◀ 上月</button>
+      </div>
+      <div style="flex:0 0 auto;font-weight:700;font-size:16px">${ym} 行程</div>
+      <div style="flex:0 0 auto">
+        <button class="btn btn-ghost" onclick="schShift(1)">下月 ▶</button>
+      </div>
+      <div style="flex:0 0 auto;margin-left:auto"><button class="btn" onclick="schAdd()">+ 添加行程</button></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <table style="width:100%;border-collapse:separate;border-spacing:4px">
+        <thead><tr style="color:var(--text-sub);font-size:12px">
+          <th style="padding:4px">一</th><th style="padding:4px">二</th><th style="padding:4px">三</th>
+          <th style="padding:4px">四</th><th style="padding:4px">五</th><th style="padding:4px">六</th><th style="padding:4px">日</th>
+        </tr></thead>
+        <tbody>${calRows.join('')}</tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 即将到来的行程</div>
+      ${evs.length? evs.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(e=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="flex:1">
+            <div style="font-weight:600">${e.title}</div>
+            <div style="font-size:12px;color:var(--text-sub);margin-top:2px">${e.date} ${e.timeStart||''}${e.timeEnd?' - '+e.timeEnd:''} ${e.place?'· '+e.place:''}</div>
+          </div>
+          <div style="display:flex;gap:6px"><button class="btn-ghost btn-sm" onclick="schEdit('${e.id}')">编</button><button class="btn-ghost btn-sm" onclick="schDel('${e.id}')">删</button></div>
+        </div>
+      `).join('') : '<div class="empty">还没有安排行程</div>'}
+    </div>
+  `;
+}
+function schShift(n){
+  const [yy,mm]=window._schMonth.split('-').map(Number);
+  const d=new Date(yy, mm-1+n, 1);
+  window._schMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  renderModule();
+}
+function schForm(e){
+  e=e||{title:'',date:today(),timeStart:'',timeEnd:'',place:'',color:'#c8d4b8',note:''};
+  openModal('🗓️ '+(e.title?'编辑行程':'添加行程'),`
+    <label class="label">标题</label><input class="input" id="sch-title" value="${(e.title||'').replace(/"/g,'&quot;')}" autofocus>
+    <div class="row">
+      <div><label class="label">日期</label><input type="date" class="input" id="sch-date" value="${e.date}"></div>
+      <div><label class="label">开始时间</label><input type="time" class="input" id="sch-start" value="${e.timeStart||''}"></div>
+      <div><label class="label">结束时间</label><input type="time" class="input" id="sch-end" value="${e.timeEnd||''}"></div>
+    </div>
+    <div class="row">
+      <div><label class="label">地点(可选)</label><input class="input" id="sch-place" value="${(e.place||'').replace(/"/g,'&quot;')}"></div>
+      <div><label class="label">标记颜色</label><input type="color" class="input" id="sch-color" value="${e.color||'#c8d4b8'}" style="height:38px;padding:2px"></div>
+    </div>
+    <label class="label">备注(可选)</label><textarea class="textarea" id="sch-note">${e.note||''}</textarea>
+    <div style="margin-top:14px"><button class="btn" style="width:100%" onclick="schSave('${e.id||''}')">保存</button></div>
+  `);
+}
+function schAdd(){ schForm(); }
+function schEdit(id){ const e=DB.get('schedules',[]).find(x=>x.id===id); if(e)schForm(e); }
+function schSave(id){
+  const title=$('#sch-title').value.trim();
+  if(!title){toast('请填写标题');return;}
+  const data={title,date:$('#sch-date').value,timeStart:$('#sch-start').value,timeEnd:$('#sch-end').value,
+    place:$('#sch-place').value,color:$('#sch-color').value,note:$('#sch-note').value};
+  const evs=DB.get('schedules',[]);
+  if(id){const i=evs.findIndex(x=>x.id===id);if(i>=0)evs[i]={...evs[i],...data};}
+  else evs.push({id:uid(),...data});
+  DB.set('schedules',evs);closeModal();renderModule();toast('已保存');
+}
+function schDel(id){
+  if(!confirm('删除此行程?'))return;
+  DB.set('schedules',DB.get('schedules',[]).filter(e=>e.id!==id));
+  renderModule();
+}
+
+/* ========================================================
+   模块4: 阅读打卡
+======================================================== */
+function renderReading(c){
+  const books=DB.get('readings',[]);
+  const crafts=DB.get('crafts',[]);
+  c.innerHTML=`
+    <div class="grid grid-2">
+      <div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-title">📖 书籍 <span class="act"><button class="btn btn-sm" onclick="rdAdd()">+ 添加</button></span></div>
+          ${books.length? books.map(b=>{
+            const pct = b.total? Math.min(100,Math.round(b.current/b.total*100)):0;
+            return `<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                <div style="font-weight:600">${b.name}</div>
+                <button class="btn-ghost btn-sm" onclick="rdPunch('${b.id}')">打卡</button>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-sub);margin-bottom:5px">
+                <span>${b.current}/${b.total}页</span><span>${pct}%</span>
+              </div>
+              <div class="progress"><div class="progress-bar" style="width:${pct}%"></div></div>
+            </div>`;
+          }).join('') : '<div class="empty">还没有添加书籍</div>'}
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-title">✂️ 手工制作 <span class="act"><button class="btn btn-sm" onclick="crAdd()">+ 添加</button></span></div>
+          ${crafts.length? crafts.map(cr=>`
+            <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                <div style="font-weight:600">${cr.name}</div>
+                <div><button class="btn-ghost btn-sm" onclick="crProgress('${cr.id}',5)">+5%</button> <button class="btn-ghost btn-sm" onclick="crDel('${cr.id}')">删</button></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-sub);margin-bottom:5px">
+                <span>${cr.note||''}</span><span>${cr.progress}%</span>
+              </div>
+              <div class="progress"><div class="progress-bar" style="width:${cr.progress}%;background:var(--orange-soft)"></div></div>
+            </div>
+          `).join('') : '<div class="empty">还没有手工项目</div>'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+function rdAdd(){
+  openModal('📖 添加书籍',`
+    <label class="label">书名</label><input class="input" id="rd-name" autofocus>
+    <div class="row"><div><label class="label">当前页</label><input type="number" class="input" id="rd-cur" value="0"></div>
+    <div><label class="label">总页数</label><input type="number" class="input" id="rd-total"></div></div>
+    <div style="margin-top:16px"><button class="btn" style="width:100%" onclick="rdSave()">保存</button></div>
+  `);
+}
+function rdSave(){
+  const name=$('#rd-name').value.trim();
+  if(!name){toast('请填写书名');return;}
+  const books=DB.get('readings',[]);
+  books.push({id:uid(),name,current:parseInt($('#rd-cur').value)||0,total:parseInt($('#rd-total').value)||0,lastDate:''});
+  DB.set('readings',books);closeModal();renderModule();toast('已添加');
+}
+function rdPunch(id){
+  openModal('📖 阅读打卡',`
+    <label class="label">今日阅读页数</label><input type="number" class="input" id="rd-pages" placeholder="如 20" autofocus>
+    <label class="label">感想(可选)</label><textarea class="textarea" id="rd-note"></textarea>
+    <div style="margin-top:16px"><button class="btn" style="width:100%" onclick="rdPunchSave('${id}')">打卡</button></div>
+  `);
+}
+function rdPunchSave(id){
+  const pages=parseInt($('#rd-pages').value)||0;
+  if(pages<=0){toast('请输入页数');return;}
+  const books=DB.get('readings',[]);
+  const b=books.find(x=>x.id===id);
+  if(b){ b.current=Math.min(b.total,b.current+pages); b.lastDate=today(); }
+  DB.set('readings',books);
+  // 存打卡记录
+  const logs=DB.get('rd_logs',[]);
+  logs.push({id:uid(),bookId:id,book:b?b.name:'',pages,date:today(),note:$('#rd-note').value});
+  DB.set('rd_logs',logs);
+  closeModal();renderModule();toast('打卡成功 +'+pages+'页');
+}
+function crAdd(){
+  openModal('✂️ 添加手工',`
+    <label class="label">项目名</label><input class="input" id="cr-name" placeholder="如：拼布包" autofocus>
+    <label class="label">备注</label><input class="input" id="cr-note">
+    <div style="margin-top:16px"><button class="btn" style="width:100%" onclick="crSave()">保存</button></div>
+  `);
+}
+function crSave(){
+  const name=$('#cr-name').value.trim();
+  if(!name){toast('请填写名称');return;}
+  const crafts=DB.get('crafts',[]);
+  crafts.push({id:uid(),name,note:$('#cr-note').value,progress:0});
+  DB.set('crafts',crafts);closeModal();renderModule();toast('已添加');
+}
+function crProgress(id,step){
+  const crafts=DB.get('crafts',[]);
+  const cr=crafts.find(x=>x.id===id);
+  if(cr){ cr.progress=Math.min(100,cr.progress+step); }
+  DB.set('crafts',crafts);renderModule();
+}
+function crDel(id){
+  if(!confirm('删除?'))return;
+  DB.set('crafts',DB.get('crafts',[]).filter(x=>x.id!==id));
+  renderModule();
+}
+
+/* ========================================================
+   模块5: 每日任务看板
+======================================================== */
+function renderTasks(c){
+  const td=today();
+  const tasks=DB.get('tasks_'+td,[]);
+  const done=tasks.filter(t=>t.done).length;
+  const pct=tasks.length? Math.round(done/tasks.length*100):0;
+  c.innerHTML=`
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title">📋 ${td} 任务 <span class="act"><span style="color:var(--text-sub);font-size:13px">${done}/${tasks.length}</span></span></div>
+      <div class="progress" style="margin-bottom:14px"><div class="progress-bar" style="width:${pct}%"></div></div>
+      <div style="display:flex;gap:8px">
+        <input class="input" id="tk-input" placeholder="添加新任务，回车确认" onkeydown="if(event.key==='Enter')tkAdd()">
+        <button class="btn" onclick="tkAdd()">+</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">✅ 待办清单</div>
+      ${tasks.length? tasks.map(t=>`
+        <div class="cbox ${t.done?'done':''}" onclick="toggleTask('${t.id}')">
+          <div class="cbox-box">${t.done?'✓':''}</div>
+          <div class="cbox-text">${t.text}${t.tag?'<span class="tag" style="margin-left:6px">'+t.tag+'</span>':''}</div>
+          <button class="cbox-del" onclick="event.stopPropagation();tkDel('${t.id}')">×</button>
+        </div>
+      `).join('') : '<div class="empty">今天还没有任务</div>'}
+    </div>
+  `;
+}
+function tkAdd(){
+  const inp=$('#tk-input');
+  const text=inp.value.trim();
+  if(!text)return;
+  const td=today();
+  const tasks=DB.get('tasks_'+td,[]);
+  tasks.push({id:uid(),text,done:false,tag:''});
+  DB.set('tasks_'+td,tasks);
+  renderModule();
+}
+function toggleTask(id){
+  const td=today();
+  const tasks=DB.get('tasks_'+td,[]);
+  const t=tasks.find(x=>x.id===id);
+  if(t){ t.done=!t.done; DB.set('tasks_'+td,tasks); renderModule(); }
+}
+function tkDel(id){
+  const td=today();
+  DB.set('tasks_'+td,DB.get('tasks_'+td,[]).filter(t=>t.id!==id));
+  renderModule();
+}
+
+/* ========================================================
+   模块6: 选题灵感中心
+======================================================== */
+function renderInspire(c){
+  const creates=DB.get('creates',[]);
+  const breaks=DB.get('videobreaks',[]);
+  c.innerHTML=`
+    <div class="grid grid-2" style="margin-bottom:14px">
+      <div class="card">
+        <div class="card-title">🎬 短视频爆点拆解 <span class="act"><button class="btn btn-sm" onclick="vbAdd()">+ 拆解</button></span></div>
+        <div style="font-size:12px;color:var(--text-sub);margin-bottom:10px">粘贴视频文案/字幕文本，本地自动拆解爆点</div>
+        ${breaks.length? breaks.slice(-5).reverse().map(b=>`
+          <div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer" onclick="vbView('${b.id}')">
+            <div style="font-weight:600;font-size:13px">${b.title||'未命名'}</div>
+            <div style="font-size:11px;color:var(--text-sub);margin-top:3px">${b.date} · ${b.points.length}个爆点</div>
+          </div>
+        `).join('') : '<div class="empty">还没有拆解记录</div>'}
+      </div>
+      <div class="card">
+        <div class="card-title">💡 选题库存库 <span class="act"><button class="btn btn-sm" onclick="ctAdd()">+ 新选题</button></span></div>
+        <div style="font-size:12px;color:var(--text-sub);margin-bottom:10px">分类管理你的选题灵感</div>
+        ${creates.length? creates.map(t=>`
+          <div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="flex:1">
+                <span class="tag ${t.status==='已用'?'tag-y':t.status==='弃用'?'tag-p':''}">${t.status||'待用'}</span>
+                <span style="font-weight:600;font-size:13px">${t.title}</span>
+              </div>
+              <button class="btn-ghost btn-sm" onclick="ctDel('${t.id}')">删</button>
+            </div>
+            ${t.desc?`<div style="font-size:12px;color:var(--text-sub);margin-top:4px">${t.desc}</div>`:''}
+            <div style="margin-top:6px;display:flex;gap:4px">
+              <button class="btn-ghost btn-sm" onclick="ctStatus('${t.id}','待用')">待用</button>
+              <button class="btn-ghost btn-sm" onclick="ctStatus('${t.id}','已用')">已用</button>
+              <button class="btn-ghost btn-sm" onclick="ctStatus('${t.id}','弃用')">弃用</button>
+            </div>
+          </div>
+        `).join('') : '<div class="empty">还没有选题</div>'}
+      </div>
+    </div>
+  `;
+}
+function vbAdd(){
+  openModal('🎬 视频爆点拆解',`
+    <label class="label">视频链接(可选，仅作记录)</label><input class="input" id="vb-url" placeholder="粘贴抖音/小红书/B站链接">
+    <label class="label">视频标题(可选)</label><input class="input" id="vb-title" placeholder="给这个视频起个名">
+    <label class="label">视频文案/字幕文本</label>
+    <textarea class="textarea" id="vb-text" style="min-height:140px" placeholder="把视频的口播文案或字幕粘贴进来，系统会自动拆解爆点"></textarea>
+    <div style="font-size:11px;color:var(--text-sub);margin-top:4px">💡 提示：由于浏览器跨域限制，无法直接抓取视频内容。请把文案文本粘贴进来，本地会用关键词规则自动拆解。</div>
+    <div style="margin-top:14px"><button class="btn" style="width:100%" onclick="vbAnalyze()">🔍 开始拆解</button></div>
+  `);
+}
+function vbAnalyze(){
+  const text=$('#vb-text').value.trim();
+  if(text.length<20){toast('请粘贴更完整的文案(至少20字)');return;}
+  // 本地爆点拆解算法 - 基于关键词规则
+  const points = vbExtract(text);
+  const title = $('#vb-title').value.trim() || text.slice(0,20)+'...';
+  const url = $('#vb-url').value.trim();
+  const breaks=DB.get('videobreaks',[]);
+  const id=uid();
+  breaks.push({id,title,url,text,points,date:today()});
+  DB.set('videobreaks',breaks);
+  closeModal();
+  setTimeout(()=>vbView(id),100);
+}
+function vbExtract(text){
+  // 爆点关键词库
+  const patterns = [
+    {type:'悬念钩子',kw:['你知道吗','你敢信','没想到','万万没想到','谁想到','不可思议','竟然','居然','没想到吧'],color:'#e8c8c8'},
+    {type:'数字冲击',kw:['%','万','亿','千','100','10倍','翻倍','破纪录','第一','最'],color:'#f0e2a9'},
+    {type:'情绪共鸣',kw:['哭了','泪目','破防','心疼','愤怒','气死','太扎心','感动','温暖','治愈'],color:'#cab8d4'},
+    {type:'反差对比',kw:['但是','然而','却','反而','对比','以前','现在','别人','自己'],color:'#bccdd4'},
+    {type:'干货价值',kw:['方法','技巧','步骤','教程','建议','推荐','收藏','保存','干货','实操','怎么做'],color:'#c8d4b8'},
+    {type:'痛点刺激',kw:['痛点','问题','困扰','烦恼','焦虑','压力','纠结','踩坑','血亏','后悔'],color:'#e8d4b8'},
+    {type:'权威背书',kw:['专家','研究','数据','调查','证明',' according','权威','官方'],color:'#cab8d4'},
+    {type:'互动引导',kw:['评论','留言','你觉得','你会','选哪个','打在公屏','扣1','扣2'],color:'#f0e2a9'},
+  ];
+  // 切句
+  const sents = text.split(/[。！？!?\n,，；;]+/).map(s=>s.trim()).filter(s=>s.length>=4);
+  const points=[];
+  sents.forEach((s,i)=>{
+    patterns.forEach(p=>{
+      if(p.kw.some(k=>s.includes(k))){
+        // 找到匹配关键词
+        const mk = p.kw.find(k=>s.includes(k));
+        points.push({type:p.type,color:p.color,sentence:s,keyword:mk,index:i});
+      }
+    });
+  });
+  // 去重(同句同类型只留一个)
+  const seen=new Set();
+  const uniq=points.filter(p=>{const k=p.sentence+p.type;if(seen.has(k))return false;seen.add(k);return true;});
+  return uniq.slice(0,12);
+}
+function vbView(id){
+  const b=DB.get('videobreaks',[]).find(x=>x.id===id);
+  if(!b)return;
+  const dirList = vbDeriveDirections(b.points);
+  openModal('🎬 '+b.title,`
+    <div style="font-size:12px;color:var(--text-sub);margin-bottom:10px">${b.date} ${b.url?'· <a href="'+b.url+'" target="_blank" style="color:var(--green-deep)">原链接</a>':''}</div>
+    <div class="card-title">🔥 爆点拆解(${b.points.length})</div>
+    <div style="max-height:280px;overflow-y:auto;margin-bottom:14px">
+    ${b.points.length? b.points.map((p,i)=>`
+      <div style="padding:8px 10px;border-left:3px solid ${p.color};background:#faf8ee;margin-bottom:6px;border-radius:4px">
+        <div style="font-size:11px;margin-bottom:3px"><span class="tag" style="background:${p.color};color:#4a4a3e">${p.type}</span> <span style="color:var(--text-sub)">关键词: ${p.keyword}</span></div>
+        <div style="font-size:13px">${p.sentence}</div>
+      </div>
+    `).join('') : '<div class="empty">未识别到明显爆点，可手动分析</div>'}
+    </div>
+    <div class="card-title">🎯 可改编方向</div>
+    <div style="margin-bottom:14px">
+    ${dirList.map(d=>`<div style="padding:8px 10px;background:#f4f6ec;border-radius:6px;margin-bottom:6px;font-size:13px"> ${d}</div>`).join('') || '<div class="empty">暂无</div>'}
+    </div>
+    <div class="card-title">📝 原文案</div>
+    <div style="background:#f4f6ec;padding:10px;border-radius:6px;font-size:12px;color:var(--text-sub);max-height:120px;overflow-y:auto;white-space:pre-wrap">${b.text}</div>
+    <div style="margin-top:14px;display:flex;gap:8px"><button class="btn" onclick="vbToTopic('${b.id}');closeModal()">存为选题</button><button class="btn-ghost" onclick="closeModal()">关闭</button></div>
+  `);
+}
+function vbDeriveDirections(points){
+  const dirs=[];
+  const types=new Set(points.map(p=>p.type));
+  if(types.has('悬念钩子'))dirs.push('保留开头悬念钩子，把答案放到后半段，提升完播率');
+  if(types.has('数字冲击'))dirs.push('强化数字对比，标题可用"X到Y"的反差句式');
+  if(types.has('情绪共鸣'))dirs.push('放大情绪点，评论区引导同类故事分享');
+  if(types.has('反差对比'))dirs.push('把反差做成前后对照画面，视觉冲击更强');
+  if(types.has('干货价值'))dirs.push('把干货提炼成"3步法/5个技巧"，做成系列');
+  if(types.has('痛点刺激'))dirs.push('开头3秒直击痛点，再给解决方案');
+  if(types.has('互动引导'))dirs.push('结尾加二选一互动，提升评论率');
+  if(types.has('权威背书'))dirs.push('把权威数据做成图表字幕，增强可信度');
+  if(dirs.length===0)dirs.push('文案较平，建议加入开头3秒钩子(数字/悬念/痛点)');
+  return dirs;
+}
+function vbToTopic(id){
+  const b=DB.get('videobreaks',[]).find(x=>x.id===id);
+  if(!b)return;
+  const creates=DB.get('creates',[]);
+  creates.push({id:uid(),title:'改编: '+b.title.slice(0,20),desc:'源自视频拆解 '+b.date,status:'待用'});
+  DB.set('creates',creates);
+  toast('已存入选题库');
+}
+function ctAdd(){
+  openModal('💡 新建选题',`
+    <label class="label">选题标题</label><input class="input" id="ct-title" autofocus>
+    <label class="label">描述/思路</label><textarea class="textarea" id="ct-desc"></textarea>
+    <div style="margin-top:14px"><button class="btn" style="width:100%" onclick="ctSave()">保存</button></div>
+  `);
+}
+function ctSave(){
+  const title=$('#ct-title').value.trim();
+  if(!title){toast('请填写标题');return;}
+  const creates=DB.get('creates',[]);
+  creates.push({id:uid(),title,desc:$('#ct-desc').value,status:'待用'});
+  DB.set('creates',creates);closeModal();renderModule();toast('已添加');
+}
+function ctStatus(id,status){
+  const creates=DB.get('creates',[]);
+  const t=creates.find(x=>x.id===id);
+  if(t){t.status=status;DB.set('creates',creates);renderModule();}
+}
+function ctDel(id){
+  if(!confirm('删除?'))return;
+  DB.set('creates',DB.get('creates',[]).filter(t=>t.id!==id));
+  renderModule();
+}
+
+/* ========================================================
+   模块7: 脚本创作库
+======================================================== */
+const SCRIPT_TEMPLATES = [
+  {name:'痛点解决型',tpl:'【开头3秒痛点】{痛点场景描述}\n【情绪共鸣】我知道你也很困扰...\n【转折】直到我发现这个方法\n【方法步骤1】{第一步}\n【方法步骤2】{第二步}\n【方法步骤3】{第三步}\n【效果展示】看，这就是改变\n【引导互动】你有什么好方法？评论区告诉我'},
+  {name:'干货清单型',tpl:'【开头钩子】{数字}个{领域}必备{物品/技巧}\n【第1点】{内容} - {理由}\n【第2点】{内容} - {理由}\n【第3点】{内容} - {理由}\n【第4点】{内容} - {理由}\n【第5点】{内容} - {理由}\n【结尾】收藏起来慢慢看，关注我不迷路'},
+  {name:'反差对比型',tpl:'【开头反差】别人都说X，但我发现Y\n【常规认知】大多数人以为...\n【真相揭示】其实真相是...\n【证据1】{数据/案例}\n【证据2】{数据/案例}\n【总结升华】所以别再被骗了\n【互动】你怎么看？'},
+  {name:'故事讲述型',tpl:'【场景引入】那天我遇到...\n【冲突发生】没想到...\n【情绪升级】更让我没想到的是...\n【转折点】直到...\n【结局】最后...\n【感悟升华】这件事让我明白...\n【互动】你有过类似经历吗？'},
+  {name:'测评种草型',tpl:'【开头钩子】花{金额}买的{产品}，到底值不值？\n【外观展示】先看包装/外观\n【使用体验】用了{时间}后的感受\n【优点1】{优点}\n【优点2】{优点}\n【缺点】{缺点}\n【最终评价】值不值这个价？\n【引导】想看更多测评关注我'},
+];
+function renderScript(c){
+  const scripts=DB.get('scripts',[]);
+  c.innerHTML=`
+    <div class="grid grid-2" style="margin-bottom:14px">
+      <div class="card">
+        <div class="card-title">📝 口播脚本模板</div>
+        <div style="font-size:12px;color:var(--text-sub);margin-bottom:10px">点击套用模板，{xxx}为待替换内容</div>
+        ${SCRIPT_TEMPLATES.map((t,i)=>`
+          <div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer" onclick="scUseTpl(${i})">
+            <div style="font-weight:600;font-size:14px">${t.name}</div>
+            <div style="font-size:11px;color:var(--text-sub);margin-top:3px">${t.tpl.split('\\n')[0].slice(0,30)}...</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title">⚡ 标题生成器</div>
+        <label class="label">主题关键词</label><input class="input" id="tg-topic" placeholder="如：收纳、减脂、考研">
+        <label class="label">目标受众(可选)</label><input class="input" id="tg-aud" placeholder="如：宝妈、学生党">
+        <button class="btn" style="margin-top:10px;width:100%" onclick="tgGen()">生成标题</button>
+        <div id="tg-result" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="margin-bottom:14px">
+      <div class="card">
+        <div class="card-title">🏷️ 标签生成器</div>
+        <label class="label">视频主题</label><input class="input" id="lb-topic" placeholder="如：夏日穿搭">
+        <button class="btn" style="margin-top:10px;width:100%" onclick="lbGen()">生成标签</button>
+        <div id="lb-result" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">✏️ 文案改写</div>
+        <label class="label">原文案</label><textarea class="textarea" id="rw-input" style="min-height:90px" placeholder="粘贴需要改写的文案"></textarea>
+        <div class="row" style="margin-top:8px">
+          <select class="select" id="rw-style">
+            <option value="口语">口语化</option>
+            <option value="文艺">文艺风</option>
+            <option value="搞笑">搞笑风</option>
+            <option value="专业">专业风</option>
+            <option value="精简">精简版</option>
+          </select>
+          <button class="btn" onclick="rwGen()">改写</button>
+        </div>
+        <div id="rw-result" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📚 我的脚本 <span class="act"><button class="btn btn-sm" onclick="scNew()">+ 新建</button></span></div>
+      ${scripts.length? scripts.map(s=>`
+        <div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between">
+            <div style="font-weight:600;font-size:14px">${s.title}</div>
+            <div><button class="btn-ghost btn-sm" onclick="scEdit('${s.id}')">编</button> <button class="btn-ghost btn-sm" onclick="scDel('${s.id}')">删</button></div>
+          </div>
+          <div style="font-size:12px;color:var(--text-sub);margin-top:4px;max-height:60px;overflow:hidden">${s.content.slice(0,100)}</div>
+        </div>
+      `).join('') : '<div class="empty">还没有保存脚本</div>'}
+    </div>
+  `;
+}
+function scUseTpl(i){
+  const tpl=SCRIPT_TEMPLATES[i];
+  openModal('📝 '+tpl.name,`
+    <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px">{xxx}为待替换占位符，直接覆盖即可</div>
+    <label class="label">脚本标题</label><input class="input" id="sc-title" value="${tpl.name}_${today()}">
+    <label class="label">内容</label><textarea class="textarea" id="sc-content" style="min-height:240px">${tpl.tpl}</textarea>
+    <div style="margin-top:14px"><button class="btn" style="width:100%" onclick="scSave()">保存到我的脚本</button></div>
+  `);
+}
+function scNew(){
+  openModal('📝 新建脚本',`
+    <label class="label">标题</label><input class="input" id="sc-title">
+    <label class="label">内容</label><textarea class="textarea" id="sc-content" style="min-height:240px"></textarea>
+    <div style="margin-top:14px"><button class="btn" style="width:100%" onclick="scSave()">保存</button></div>
+  `);
+}
+function scEdit(id){
+  const s=DB.get('scripts',[]).find(x=>x.id===id);
+  if(!s)return;
+  openModal('📝 编辑脚本',`
+    <label class="label">标题</label><input class="input" id="sc-title" value="${s.title.replace(/"/g,'&quot;')}">
+    <label class="label">内容</label><textarea class="textarea" id="sc-content" style="min-height:240px">${s.content}</textarea>
+    <div style="margin-top:14px"><button class="btn" style="width:100%" onclick="scSave('${id}')">保存</button></div>
+  `);
+}
+function scSave(id){
+  const title=$('#sc-title').value.trim();
+  const content=$('#sc-content').value;
+  if(!title){toast('请填写标题');return;}
+  const scripts=DB.get('scripts',[]);
+  if(id){const s=scripts.find(x=>x.id===id);if(s){s.title=title;s.content=content;}}
+  else{scripts.push({id:uid(),title,content,updated:today()});}
+  DB.set('scripts',scripts);closeModal();renderModule();toast('已保存');
+}
+function scDel(id){
+  if(!confirm('删除?'))return;
+  DB.set('scripts',DB.get('scripts',[]).filter(s=>s.id!==id));
+  renderModule();
+}
+function tgGen(){
+  const topic=$('#tg-topic').value.trim();
+  const aud=$('#tg-aud').value.trim();
+  if(!topic){toast('请输入主题');return;}
+  const a = aud||'大家';
+  const titles=[
+    `${topic}的${a}必看！这${3+Math.floor(Math.random()*3)}个细节99%的人不知道`,
+    `${topic}翻车实录：我花了${3+Math.floor(Math.random()*5)}年才搞懂的事`,
+    `${a}快收藏！${topic}的终极指南，一篇讲透`,
+    `${topic}到底怎么做？3分钟看完不踩坑`,
+    `${topic}前后对比太真实了，${a}看完都沉默`,
+    `别再做错${topic}了！${a}的正确打开方式`,
+    `${topic}隐藏玩法大公开，第${2+Math.floor(Math.random()*3)}个绝了`,
+    `我用${topic}改变了生活，${a}也能做到`,
+  ];
+  $('#tg-result').innerHTML = titles.map(t=>`
+    <div style="padding:8px 10px;background:#f4f6ec;border-radius:6px;margin-bottom:6px;font-size:13px;cursor:pointer" onclick="navigator.clipboard.writeText('${t.replace(/'/g,"\\'")}');toast('已复制')">${t} 📋</div>
+  `).join('');
+}
+function lbGen(){
+  const topic=$('#lb-topic').value.trim();
+  if(!topic){toast('请输入主题');return;}
+  const base=[topic, '#'+topic+'分享', '#'+topic+'教程', '#'+topic+'日常'];
+  const ext=['#生活小技巧','#干货分享','#收藏起来','#涨知识','#实用攻略','#新手必看','#避坑指南','#宝藏推荐','#我的日常','#好物推荐'];
+  const tags=base.concat(ext.sort(()=>Math.random()-0.5).slice(0,5));
+  $('#lb-result').innerHTML = `<div style="padding:10px;background:#f4f6ec;border-radius:6px;font-size:13px;line-height:2">${tags.join(' ')}</div>
+    <button class="btn btn-sm" style="margin-top:6px" onclick="navigator.clipboard.writeText('${tags.join(' ')}');toast('已复制全部')">复制全部</button>`;
+}
+function rwGen(){
+  const txt=$('#rw-input').value.trim();
+  const style=$('#rw-style').value;
+  if(!txt){toast('请输入原文案');return;}
+  // 本地规则改写
+  let out=txt;
+  if(style==='口语'){
+    out = out.replace(/因此/g,'所以').replace(/此外/g,'还有啊').replace(/然而/g,'但是').replace(/此外/g,'另外');
+    out = '跟你说啊，'+out+' 你觉得呢？';
+  } else if(style==='文艺'){
+    out = '岁月静好里，'+out+' 这大概就是生活最温柔的样子。';
+  } else if(style==='搞笑'){
+    out = '家人们谁懂啊！'+out+' 我直接一个好家伙！😂';
+  } else if(style==='专业'){
+    out = '【专业分析】'+out+' 综上，建议参考执行。';
+  } else if(style==='精简'){
+    out = txt.replace(/[，。！？、的了着]/g,m=>['，','。','！','？','、','','',''][',。！？、的了着'.indexOf(m)]||m).slice(0,Math.ceil(txt.length*0.6));
+    out = out.replace(/(因此|此外|然而|另外|其实|实际上|我觉得|我认为)/g,'');
+  }
+  $('#rw-result').innerHTML = `<div style="padding:10px;background:#f4f6ec;border-radius:6px;font-size:13px;line-height:1.7">${out}</div>
+    <button class="btn btn-sm" style="margin-top:6px" onclick="navigator.clipboard.writeText(\`${out.replace(/`/g,'\\`')}\`);toast('已复制')">复制</button>`;
+}
+
+/* ========================================================
+   模块8: 数据复盘
+======================================================== */
+function renderReview(c){
+  const reviews=DB.get('reviews',[]);
+  c.innerHTML=`
+    <div style="margin-bottom:14px"><button class="btn" onclick="rvAdd()">+ 新增复盘</button></div>
+    ${reviews.length? reviews.sort((a,b)=>b.date.localeCompare(a.date)).map(r=>`
+      <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div><span style="font-weight:700;font-size:16px">${r.title}</span> <span class="tag">${r.date}</span></div>
+          <div><button class="btn-ghost btn-sm" onclick="rvEdit('${r.id}')">编</button> <button class="btn-ghost btn-sm" onclick="rvDel('${r.id}')">删</button></div>
+        </div>
+        ${r.metrics?`<div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap">${r.metrics.map(m=>`<div style="background:#f4f6ec;padding:6px 12px;border-radius:6px;font-size:12px">${m.label}: <b style="color:var(--green-deep)">${m.value}</b></div>`).join('')}</div>`:''}
+        ${r.pros?`<div style="margin-bottom:6px"><span style="color:#7a8c6a;font-weight:600">✅ 优点</span><div style="font-size:13px;padding-left:14px">${r.pros}</div></div>`:''}
+        ${r.cons?`<div style="margin-bottom:6px"><span style="color:#a87878;font-weight:600">❌ 不足</span><div style="font-size:13px;padding-left:14px">${r.cons}</div></div>`:''}
+        ${r.plan?`<div><span style="color:#a8855a;font-weight:600">🎯 优化方案</span><div style="font-size:13px;padding-left:14px">${r.plan}</div></div>`:''}
+      </div>
+    `).join('') : '<div class="empty">还没有复盘记录</div>'}
+  `;
+}
+function rvAdd(){
+  rvForm();
+}
+function rvEdit(id){
+  const r=DB.get('reviews',[]).find(x=>x.id===id);
+  if(r)rvForm(r);
+}
+function rvForm(r){
+  r=r||{title:'',date:today(),metrics:[],pros:'',cons:'',plan:''};
+  openModal('📊 数据复盘',`
+    <div class="row"><div><label class="label">标题</label><input class="input" id="rv-title" value="${r.title.replace(/"/g,'&quot;')}" placeholder="如：第10期视频复盘"></div>
+    <div><label class="label">日期</label><input type="date" class="input" id="rv-date" value="${r.date}"></div></div>
+    <label class="label">数据指标(逗号分隔，格式:标签=值)</label>
+    <input class="input" id="rv-metrics" value="${r.metrics.map(m=>m.label+'='+m.value).join(',')}" placeholder="播放=5000,点赞=200,评论=50">
+    <label class="label">✅ 优点总结</label><textarea class="textarea" id="rv-pros">${r.pros}</textarea>
+    <label class="label">❌ 不足之处</label><textarea class="textarea" id="rv-cons">${r.cons}</textarea>
+    <label class="label">🎯 优化方案</label><textarea class="textarea" id="rv-plan">${r.plan}</textarea>
+    <div style="margin-top:14px"><button class="btn" style="width:100%" onclick="rvSave('${r.id||''}')">保存</button></div>
+  `);
+}
+function rvSave(id){
+  const title=$('#rv-title').value.trim();
+  if(!title){toast('请填写标题');return;}
+  const metricsStr=$('#rv-metrics').value.trim();
+  const metrics=metricsStr? metricsStr.split(',').map(s=>{const [l,v]=s.split('=');return {label:(l||'').trim(),value:(v||'').trim()};}).filter(m=>m.label):[];
+  const data={title,date:$('#rv-date').value,metrics,pros:$('#rv-pros').value,cons:$('#rv-cons').value,plan:$('#rv-plan').value};
+  const reviews=DB.get('reviews',[]);
+  if(id){const i=reviews.findIndex(x=>x.id===id);if(i>=0){reviews[i]={...reviews[i],...data};}}
+  else{reviews.push({id:uid(),...data});}
+  DB.set('reviews',reviews);closeModal();renderModule();toast('已保存');
+}
+function rvDel(id){
+  if(!confirm('删除?'))return;
+  DB.set('reviews',DB.get('reviews',[]).filter(r=>r.id!==id));
+  renderModule();
+}
+
+/* ========================================================
+   模块9: 热点雷达
+======================================================== */
+function renderHotspot(c){
+  const hots=DB.get('hotspots',[]);
+  const profile=DB.get('acc_profile',{tags:['生活','手工','创意'],audience:'年轻女性'});
+  const matched=hots.map(h=>({h,score:hpMatch(h,profile)})).sort((a,b)=>b.score-a.score);
+  c.innerHTML=`
+    <div class="grid grid-2" style="margin-bottom:14px">
+      <div class="card">
+        <div class="card-title">🎯 账号定位 <span class="act"><button class="btn btn-sm" onclick="hpProfile()">编辑</button></span></div>
+        <div style="font-size:13px;line-height:1.8">
+          <div><b>内容标签:</b> ${profile.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+          <div style="margin-top:6px"><b>目标受众:</b> ${profile.audience}</div>
+          <div style="margin-top:6px;font-size:12px;color:var(--text-sub)">系统会根据定位给热点打适配分</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🔥 录入热点 <span class="act"><button class="btn btn-sm" onclick="hpAdd()">+ 录入</button></span></div>
+        <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px">手动录入热点关键词/描述，本地自动匹配选题</div>
+        <div style="font-size:13px">已录入 ${hots.length} 条热点</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📡 热点选题匹配</div>
+      ${matched.length? matched.map(({h,score})=>{
+        const stars='★'.repeat(Math.min(5,Math.max(1,score)));
+        return `<div style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+            <div style="font-weight:600">${h.title}</div>
+            <div style="color:#a8855a;font-size:12px">${stars}</div>
+          </div>
+          <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px">${h.desc||''}</div>
+          ${h.topics?h.topics.map(t=>`<div style="padding:6px 10px;background:#f4f6ec;border-radius:6px;font-size:13px;margin-bottom:4px">💡 ${t}</div>`).join(''):''}
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button class="btn btn-sm" onclick="hpToTopic('${h.id}')">存入选题</button>
+            <button class="btn-ghost btn-sm" onclick="hpDel('${h.id}')">删</button>
+          </div>
+        </div>`;
+      }).join('') : '<div class="empty">还没有录入热点</div>'}
+    </div>
+  `;
+}
+function hpMatch(h,profile){
+  let score=1;
+  const text=(h.title+' '+(h.desc||'')).toLowerCase();
+  profile.tags.forEach(t=>{ if(text.includes(t.toLowerCase()))score+=1; });
+  if(h.topics&&h.topics.length)score+=1;
+  return score;
+}
+function hpProfile(){
+  const p=DB.get('acc_profile',{tags:['生活','手工','创意'],audience:'年轻女性'});
+  openModal('🎯 账号定位',`
+    <label class="label">内容标签(逗号分隔)</label><input class="input" id="hp-tags" value="${p.tags.join(',')}">
+    <label class="label">目标受众</label><input class="input" id="hp-aud" value="${p.audience}">
+    <div style="margin-top:14px"><button class="btn" style="width:100%" onclick="hpProfileSave()">保存</button></div>
+  `);
+}
+function hpProfileSave(){
+  const tags=$('#hp-tags').value.split(',').map(s=>s.trim()).filter(s=>s);
+  const audience=$('#hp-aud').value.trim();
+  DB.set('acc_profile',{tags,audience});
+  closeModal();renderModule();toast('已保存');
+}
+function hpAdd(){
+  openModal('🔥 录入热点',`
+    <label class="label">热点标题</label><input class="input" id="hp-title" placeholder="如：某综艺爆火片段" autofocus>
+    <label class="label">描述(可选)</label><textarea class="textarea" id="hp-desc"></textarea>
+    <label class="label">可改编选题(每行一个)</label><textarea class="textarea" id="hp-topics" placeholder="如：把综艺梗用到手工视频里"></textarea>
+    <div style="margin-top:14px"><button class="btn" style="width:100%" onclick="hpSave()">保存</button></div>
+  `);
+}
+function hpSave(){
+  const title=$('#hp-title').value.trim();
+  if(!title){toast('请填写标题');return;}
+  const topics=$('#hp-topics').value.split('\n').map(s=>s.trim()).filter(s=>s);
+  const hots=DB.get('hotspots',[]);
+  hots.push({id:uid(),title,desc:$('#hp-desc').value,topics,date:today()});
+  DB.set('hotspots',hots);closeModal();renderModule();toast('已录入');
+}
+function hpToTopic(id){
+  const h=DB.get('hotspots',[]).find(x=>x.id===id);
+  if(!h)return;
+  const creates=DB.get('creates',[]);
+  creates.push({id:uid(),title:'热点: '+h.title,desc:h.desc||'',status:'待用'});
+  DB.set('creates',creates);toast('已存入选题库');
+}
+function hpDel(id){
+  if(!confirm('删除?'))return;
+  DB.set('hotspots',DB.get('hotspots',[]).filter(h=>h.id!==id));
+  renderModule();
+}
+
+/* ========================================================
+   联网热点模块（小红书 / 今日头条 / 公众号）
+   - 尝试联网抓取第三方热榜（候选API依次尝试，CORS代理可选）
+   - 小红书/公众号无官方开放热榜API，使用通用热榜+本地收藏替代
+   - 本地收藏永远可用，联网失败自动降级
+======================================================== */
+const HOT_CFG = {
+  xhs:    {name:'小红书热点', color:'#ff6f61', icon:'📕',
+           cats:['穿搭','美妆','美食','旅行','家居','母婴','好物','情感'],
+           apis:['https://orz.ai/api/v1/dailynews/?platform=douyin','https://api.vvhan.com/api/hotlist/douyin'],
+           note:'小红书官方无开放热榜API，此处接入抖音/通用热榜作为创作灵感参考，你也可手动收藏刷到的小红书爆款。'},
+  toutiao:{name:'今日头条热点', color:'#e8463a', icon:'📰',
+           cats:['社会','时政','财经','科技','娱乐','体育','国际','民生'],
+           apis:['https://orz.ai/api/v1/dailynews/?platform=jinritoutiao','https://api.vvhan.com/api/hotlist/toutiao'],
+           note:'联网抓取今日头条实时热榜，按类型筛选，可一键存为选题。'},
+  wechat: {name:'公众号热点', color:'#1aad19', icon:'💬',
+           cats:['时事','行业','观点','干货','情感','商业','科技','生活'],
+           apis:['https://orz.ai/api/v1/dailynews/?platform=weibo','https://api.vvhan.com/api/hotlist/weibo'],
+           note:'公众号无官方热榜API，此处接入微博/通用热榜作为选题参考，亦可手动收藏你关注的公众号爆文。'},
+};
+function renderHotModule(id, c){
+  const cfg = HOT_CFG[id];
+  const favs = DB.get('hotfav_'+id, []);
+  const proxy = DB.get('cors_proxy','');
+  c.innerHTML = `
+    <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,${cfg.color}22,${cfg.color}11)">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:20px">${cfg.icon}</span>
+        <b style="color:${cfg.color}">${cfg.name}</b>
+        <button class="btn btn-sm" style="margin-left:auto" onclick="hotRefresh('${id}')">🔄 联网刷新</button>
+      </div>
+      <div style="font-size:12px;color:var(--text-sub);margin-top:6px;line-height:1.6">${cfg.note}</div>
+      <div id="hot-status" style="font-size:12px;color:var(--text-sub);margin-top:6px"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title">📥 我的收藏 <span class="act"><button class="btn btn-sm" onclick="hotFavAdd('${id}')">+ 收藏热点</button></span></div>
+      ${favs.length? favs.map(f=>`
+        <div style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div style="flex:1">
+            <div><span class="tag" style="background:${cfg.color}33;color:${cfg.color}">${f.cat||'未分类'}</span> <b>${f.title}</b></div>
+            ${f.likes?`<div style="font-size:12px;color:var(--text-sub);margin-top:3px">👍 ${f.likes}</div>`:''}
+            ${f.note?`<div style="font-size:12px;color:var(--text-sub);margin-top:3px">${f.note}</div>`:''}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <button class="btn btn-sm btn-yellow" onclick="hotFavToTopic('${id}','${f.id}')">选题</button>
+            <button class="btn btn-sm btn-ghost" onclick="hotFavDel('${id}','${f.id}')">删</button>
+          </div>
+        </div>
+      `).join('') : '<div class="empty">还没有收藏，联网刷新或手动添加</div>'}
+    </div>
+
+    <div class="card">
+      <div class="card-title">🌐 实时热榜 <span class="act">
+        <select class="select" style="width:auto" id="hot-cat-${id}" onchange="hotRefresh('${id}')">
+          <option value="">全部分类</option>${cfg.cats.map(cat=>`<option value="${cat}">${cat}</option>`).join('')}
+        </select>
+      </span></div>
+      <div id="hot-list-${id}"><div class="empty">点击「联网刷新」获取最新热榜</div></div>
+    </div>
+  `;
+}
+function renderXhs(c){ renderHotModule('xhs', c); }
+function renderToutiao(c){ renderHotModule('toutiao', c); }
+function renderWechat(c){ renderHotModule('wechat', c); }
+
+async function hotRefresh(id){
+  const cfg=HOT_CFG[id];
+  const statusEl=document.getElementById('hot-status');
+  const listEl=document.getElementById('hot-list-'+id);
+  const cat=document.getElementById('hot-cat-'+id)?.value||'';
+  if(statusEl)statusEl.textContent='⏳ 正在联网获取...';
+  if(listEl)listEl.innerHTML='<div class="empty">获取中...</div>';
+  const proxy=DB.get('cors_proxy','');
+  let items=null, usedApi='';
+  for(const api of cfg.apis){
+    try{
+      const url = proxy? (proxy.includes('?')? proxy+encodeURIComponent(api) : proxy+api) : api;
+      const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),9000);
+      const res=await fetch(url,{signal:ctrl.signal, mode:'cors'});
+      clearTimeout(to);
+      if(!res.ok)continue;
+      const j=await res.json();
+      const arr = (j.data&&Array.isArray(j.data))? j.data
+                 : (Array.isArray(j.data?.list))? j.data.list
+                 : (Array.isArray(j))? j : null;
+      if(arr&&arr.length){ items=arr; usedApi=api; break; }
+    }catch(e){ /* 尝试下一个 */ }
+  }
+  if(!items){
+    if(statusEl)statusEl.innerHTML='⚠️ 联网获取失败（可能是接口或浏览器跨域限制）。可前往「模块设置」配置 CORS 代理，或在上方手动收藏热点。';
+    if(listEl)listEl.innerHTML='<div class="empty">无法获取实时热榜，请手动收藏</div>';
+    return;
+  }
+  if(statusEl)statusEl.innerHTML='✅ 已获取 '+items.length+' 条（来源：'+usedApi.split('?')[0]+'）';
+  const thMin = id==='xhs'? 50000 : 1000;
+  const html = items.slice(0,40).map((it,i)=>{
+    const title=it.title||it.hot||it.word||it.name||'(无标题)';
+    const likes = parseInt(it.hot||it.likes||it.num||it.like_num||0);
+    const url=it.url||it.link||'';
+    const hot = likes>=thMin;
+    const catName = cat && cfg.cats.includes(cat)? cat : (cfg.cats[i%cfg.cats.length]);
+    return `<div style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start">
+      <div style="font-weight:700;color:var(--text-light);width:24px;text-align:center;flex-shrink:0">${i+1}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px">${hot?'🔥 ':''}${title}</div>
+        ${likes?`<div style="font-size:12px;color:${hot?'#c0392b':'var(--text-sub)'};margin-top:3px">👍 ${likes.toLocaleString()}${hot?' · 达标':''}</div>`:''}
+        <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap">
+          <span class="tag" style="background:${cfg.color}33;color:${cfg.color}">${catName}</span>
+          ${url?`<a href="${url}" target="_blank" style="font-size:12px;color:var(--green-deep)">原链接</a>`:''}
+          <button class="btn btn-sm btn-yellow" onclick="hotQuickFav('${id}','${encodeURIComponent(title)}','${catName}',${likes})">收藏</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  if(listEl)listEl.innerHTML=html||'<div class="empty">暂无数据</div>';
+}
+function hotQuickFav(id,title,cat,likes){
+  const favs=DB.get('hotfav_'+id,[]);
+  favs.unshift({id:uid(),title:decodeURIComponent(title),cat,likes:likes||0,note:'',date:today()});
+  DB.set('hotfav_'+id,favs);toast('已收藏');
+  renderModule();
+}
+function hotFavAdd(id){
+  const cfg=HOT_CFG[id];
+  openModal(cfg.icon+' 收藏热点',`
+    <label class="label">标题</label><input class="input" id="hf-title" autofocus>
+    <div class="row">
+      <div><label class="label">分类</label><select class="select" id="hf-cat">${cfg.cats.map(c=>`<option value="${c}">${c}</option>`).join('')}</select></div>
+      <div><label class="label">点赞数(可选)</label><input type="number" class="input" id="hf-likes" placeholder="如 52000"></div>
+    </div>
+    <label class="label">备注(可选)</label><textarea class="textarea" id="hf-note"></textarea>
+    <div style="margin-top:14px"><button class="btn" style="width:100%" onclick="hotFavSave('${id}')">保存</button></div>
+  `);
+}
+function hotFavSave(id){
+  const title=$('#hf-title').value.trim();
+  if(!title){toast('请填写标题');return;}
+  const favs=DB.get('hotfav_'+id,[]);
+  favs.unshift({id:uid(),title,cat:$('#hf-cat').value,likes:parseInt($('#hf-likes').value)||0,note:$('#hf-note').value,date:today()});
+  DB.set('hotfav_'+id,favs);closeModal();renderModule();toast('已收藏');
+}
+function hotFavToTopic(id,fid){
+  const favs=DB.get('hotfav_'+id,[]);
+  const f=favs.find(x=>x.id===fid);
+  if(!f)return;
+  const creates=DB.get('creates',[]);
+  creates.push({id:uid(),title:'热点: '+f.title.slice(0,25),desc:'源自'+HOT_CFG[id].name+' '+today(),status:'待用'});
+  DB.set('creates',creates);toast('已存入选题库');
+}
+function hotFavDel(id,fid){
+  if(!confirm('删除?'))return;
+  DB.set('hotfav_'+id,DB.get('hotfav_'+id,[]).filter(f=>f.id!==fid));
+  renderModule();
+}
+
+/* ========================================================
+   模块11: 日记（语音输入 + 密码保护）
+======================================================== */
+function renderDiary(c){
+  const entries = DB.get('diaries',[]).sort((a,b)=>b.date.localeCompare(b.date));
+  const hasPwd = !!DB.get('diary_pwd','');
+  c.innerHTML = `
+    <div class="row" style="margin-bottom:14px;align-items:center">
+      <div style="flex:0 0 auto"><button class="btn" onclick="diaryWrite()">✍️ 写日记</button></div>
+      <div style="flex:0 0 auto"><button class="btn btn-ghost" onclick="diarySetPwd()">${hasPwd?'🔑 修改密码':'🔑 设置密码'}</button></div>
+      <div style="flex:1;text-align:right;font-size:12px;color:var(--text-sub)">${hasPwd?'详情已加密保护':'详情未加密'}</div>
+    </div>
+
+    <div class="grid grid-2">
+      ${entries.length? entries.map(e=>`
+        <div class="card" style="cursor:pointer" onclick="diaryOpen('${e.id}')">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+            <div style="font-weight:700;font-size:16px">${e.mood||'📔'} ${e.title||'无标题'}</div>
+            <button class="btn-ghost btn-sm" onclick="event.stopPropagation();diaryDel('${e.id}')">删</button>
+          </div>
+          <div style="font-size:12px;color:var(--text-sub)">${e.date} · ${e.content? e.content.length+'字':'语音'}${hasPwd?' 🔒':''}</div>
+          <div style="font-size:13px;color:var(--text-sub);margin-top:6px;max-height:44px;overflow:hidden">${hasPwd?'（点开查看详细内容需密码）': (e.content? e.content.slice(0,50):'')}</div>
+        </div>
+      `).join('') : '<div class="empty" style="grid-column:1/-1">还没有日记，点「写日记」开始吧</div>'}
+    </div>
+  `;
+}
+function diarySetPwd(){
+  const cur=DB.get('diary_pwd','');
+  openModal('🔑 日记密码',`
+    ${cur?'<div style="font-size:12px;color:var(--text-sub);margin-bottom:10px">当前已设置密码，留空新密码则取消保护</div>':''}
+    <label class="label">${cur?'新密码':'设置密码'}</label><input type="password" class="input" id="dp-new" placeholder="查看详情所需密码" autofocus>
+    <label class="label">${cur?'确认新密码':'确认密码'}</label><input type="password" class="input" id="dp-conf">
+    <div style="margin-top:14px"><button class="btn" style="width:100%" onclick="diarySavePwd()">保存</button></div>
+  `);
+}
+function diarySavePwd(){
+  const nw=$('#dp-new').value, cf=$('#dp-conf').value;
+  if(!nw){ if(confirm('确认取消密码保护?')){DB.del('diary_pwd');closeModal();renderModule();toast('已取消保护');} return; }
+  if(nw!==cf){toast('两次密码不一致');return;}
+  DB.set('diary_pwd',nw);closeModal();renderModule();toast('密码已设置');
+}
+function diaryWrite(){
+  openModal('✍️ 写日记',`
+    <div class="row">
+      <div><label class="label">标题</label><input class="input" id="dy-title" placeholder="今天发生了什么" autofocus></div>
+      <div><label class="label">心情</label><input class="input" id="dy-mood" placeholder="😊" value="😊"></div>
+    </div>
+    <label class="label">正文</label>
+    <textarea class="textarea" id="dy-content" style="min-height:160px" placeholder="记录今天的点滴，支持语音输入"></textarea>
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button class="btn btn-purple" id="dy-mic" onclick="diaryVoice()">🎤 语音输入</button>
+      <span id="dy-voice-tip" style="font-size:12px;color:var(--text-sub);align-self:center"></span>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:8px"><button class="btn" style="flex:1" onclick="diarySave()">保存</button><button class="btn-ghost" onclick="diaryStopVoice();closeModal()">取消</button></div>
+  `);
+}
+let _rec=null;
+function diaryVoice(){
+  const tip=$('#dy-voice-tip');
+  if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)){
+    tip.textContent='当前浏览器不支持语音输入，可手动输入';return;
+  }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(_rec){ diaryStopVoice(); return; }
+  _rec=new SR();
+  _rec.lang='zh-CN'; _rec.continuous=true; _rec.interimResults=true;
+  const ta=$('#dy-content');
+  _rec.onresult=e=>{
+    let txt='';
+    for(let i=e.resultIndex;i<e.results.length;i++) txt+=e.results[i][0].transcript;
+    tip.textContent='聆听中…'+txt.slice(-20);
+    ta.value=ta.value? ta.value+' '+txt : txt;
+  };
+  _rec.onend=()=>{ tip.textContent='语音结束'; _rec=null; };
+  _rec.onerror=()=>{ tip.textContent='语音识别出错，请手动输入'; _rec=null; };
+  try{ _rec.start(); tip.textContent='🎤 聆听中…点击可停止'; $('#dy-mic').textContent='⏹ 停止'; }catch(e){}
+}
+function diaryStopVoice(){ if(_rec){try{_rec.stop();}catch(e){} _rec=null;} const m=$('#dy-mic'); if(m)m.textContent='🎤 语音输入'; }
+function diarySave(){
+  const title=$('#dy-title').value.trim()||'无标题';
+  const content=$('#dy-content').value.trim();
+  if(!content){toast('请写点什么');return;}
+  const entries=DB.get('diaries',[]);
+  entries.push({id:uid(),title,mood:$('#dy-mood').value||'😊',content,date:today(),created:Date.now()});
+  DB.set('diaries',entries);diaryStopVoice();closeModal();renderModule();toast('日记已保存');
+}
+function diaryOpen(id){
+  const e=DB.get('diaries',[]).find(x=>x.id===id);
+  if(!e)return;
+  const pwd=DB.get('diary_pwd','');
+  if(!pwd){ diaryShow(e); return; }
+  openModal('🔒 输入密码',`
+    <label class="label">查看「${e.title}」详情需要密码</label>
+    <input type="password" class="input" id="dy-check" placeholder="请输入日记密码" autofocus onkeydown="if(event.key==='Enter')diaryCheck('${id}')">
+    <div style="margin-top:14px"><button class="btn" style="width:100%" onclick="diaryCheck('${id}')">查看</button></div>
+  `);
+}
+function diaryCheck(id){
+  const pwd=DB.get('diary_pwd','');
+  if($('#dy-check').value!==pwd){toast('密码错误');return;}
+  const e=DB.get('diaries',[]).find(x=>x.id===id);
+  if(e)diaryShow(e);
+}
+function diaryShow(e){
+  openModal('📔 '+e.title,`
+    <div style="font-size:13px;color:var(--text-sub);margin-bottom:10px">${e.mood||''} ${e.date} · ${e.content.length}字</div>
+    <div style="background:#f8f6ea;padding:14px;border-radius:8px;font-size:14px;line-height:1.9;white-space:pre-wrap">${e.content}</div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="btn btn-purple" onclick="diarySpeak(\`${(e.content||'').replace(/`/g,'\\`')}\`)">🔊 朗读</button>
+      <button class="btn-ghost" onclick="closeModal()">关闭</button>
+    </div>
+  `);
+}
+function diarySpeak(text){
+  if(!('speechSynthesis' in window)){toast('当前浏览器不支持朗读');return;}
+  try{ const u=new SpeechSynthesisUtterance(text); u.lang='zh-CN'; speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){}
+}
+function diaryDel(id){
+  if(!confirm('删除这篇日记?'))return;
+  DB.set('diaries',DB.get('diaries',[]).filter(d=>d.id!==id));
+  renderModule();
+}
+
+/* ========================================================
+   模块10: 教程分解
+   粘贴视频文案 → 自动拆解为结构化步骤 → 提取关键数据 → 去口气词/衔接词
+======================================================== */
+function renderTutorial(c){
+  const tutorials = DB.get('tutorials',[]);
+  c.innerHTML = `
+    <div style="margin-bottom:14px"><button class="btn" onclick="tuAdd()">🎬 粘贴文案开始分解</button></div>
+    ${tutorials.length? tutorials.sort((a,b)=>b.date.localeCompare(a.date)).map(t=>`
+      <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div><span style="font-weight:700;font-size:16px">${t.title}</span>
+            <span class="tag" style="margin-left:6px">${t.date}</span>
+            ${t.url?`<a href="${t.url}" target="_blank" style="font-size:11px;color:var(--green-deep);margin-left:6px">原链接</a>`:''}
+          </div>
+          <div><button class="btn-ghost btn-sm" onclick="tuView('${t.id}')">查看</button>
+            <button class="btn-ghost btn-sm" onclick="tuDel('${t.id}')">删</button></div>
+        </div>
+        <div style="font-size:12px;color:var(--text-sub)">
+          📊 ${t.stats.totalSteps||0}个步骤 · 📈 ${t.stats.keyNumbers||0}个数据点 · 📝 ${t.stats.originalLen||0}字 → ${t.stats.cleanLen||0}字精简
+        </div>
+      </div>
+    `).join('') : `<div class="empty" style="text-align:center;padding:40px">
+      <div style="font-size:40px;margin-bottom:10px">🎓</div>
+      <div style="font-weight:600;margin-bottom:4px">还没有分解记录</div>
+      <div style="color:var(--text-sub);margin-bottom:16px">把视频字幕/文案粘贴进来，系统自动拆解为结构化步骤</div>
+      <div style="font-size:12px;color:var(--text-light);line-height:1.8;text-align:left;max-width:420px;margin:0 auto;background:#f8f6ea;padding:12px;border-radius:8px">
+        <div style="font-weight:600;margin-bottom:4px">💡 支持的能力：</div>
+        <div>• 自动识别步骤（第一步/首先/然后/最后…）</div>
+        <div>• 提取关键数据（数字、百分比、金额）</div>
+        <div>• 去除口气词（然后呢/对吧/就是说/嗯…）</div>
+        <div>• 去除衔接词（接下来/那么/所以呢/好…）</div>
+        <div>• 汇总为简洁结构化步骤清单</div>
+      </div>
+    </div>`}
+  `;
+}
+
+function tuAdd(){
+  openModal('🎓 教程分解',`
+    <label class="label">视频链接(可选，仅作记录)</label>
+    <input class="input" id="tu-url" placeholder="粘贴抖音/小红书/B站链接">
+    <label class="label">视频标题</label>
+    <input class="input" id="tu-title" placeholder="给这个教程起个名，留空自动提取" autofocus>
+    <label class="label">视频文案/字幕文本</label>
+    <textarea class="textarea" id="tu-text" style="min-height:200px" placeholder="把教程视频的口播文案或字幕文本粘贴进来，系统会自动拆解为步骤"></textarea>
+    <div style="font-size:11px;color:var(--text-sub);margin-top:4px">💡 提示：把视频字幕复制粘贴进来即可，系统会自动识别步骤、提取数据、去掉废话。</div>
+    <div style="margin-top:14px"><button class="btn" style="width:100%" onclick="tuAnalyze()">🔍 开始分解</button></div>
+  `);
+}
+
+function tuAnalyze(){
+  const text = $('#tu-text').value.trim();
+  if(text.length < 30){ toast('请粘贴更完整的文案(至少30字)'); return; }
+
+  const title = $('#tu-title').value.trim() || text.slice(0,25)+'…';
+  const url = $('#tu-url').value.trim();
+  const result = tuDecompose(text);
+
+  const tutorials = DB.get('tutorials',[]);
+  const id = uid();
+  tutorials.push({
+    id, title, url, text, date: today(),
+    steps: result.steps,
+    keyData: result.keyData,
+    stats: result.stats,
+  });
+  DB.set('tutorials', tutorials);
+  closeModal();
+  setTimeout(()=>tuView(id),100);
+}
+
+function tuDecompose(text){
+  // 第一步：去除口气词和衔接词 — 多轮清理策略
+  const fillerWords = [
+    // 长词优先
+    '然后呢','就是说','你知道吗','你知道吧','我跟你说','我跟你讲',
+    '说白了','说实话','讲真','怎么说呢','怎么讲',
+    '大家知道','大家想','大家看','你们看','你们想',
+    '接下来','那么接下来','首先呢','其次呢','然后呢','最后呢',
+    '最后的最后','总而言之','总结一下','总的来说',
+    '是不是','对不对','明白吗','懂了吗','能理解吗',
+    '就这样','这样子','就是说呢','就是说啊',
+    // 中短词
+    '对吧','嗯','啊','哦','呃','嘛','呢','吧','呀','哈',
+    '好','好了','好嘞','来吧','来','我们来看','我们看','看一下',
+    '然后','还有就是','还有呢','另外','另外呢',
+    '就是','这个呢','那个呢','所以呢','那么',
+    '最后','最后一步','最后是','收尾','总结','结尾',
+    'OK','ok','Ok',
+  ];
+
+  // 按长度降序排列，优先匹配长词
+  const sortedFillers = fillerWords.sort((a,b)=>b.length-a.length);
+
+  let clean = text;
+
+  // 第一轮：边界匹配（句首/句尾/逗号前后）
+  sortedFillers.forEach(fw=>{
+    const escaped = fw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    // 边界模式：在标点或空格前后
+    const regex = new RegExp(`(^|[,，。！？!?\\s])${escaped}([,，。！？!?\\s]|$)`, 'g');
+    clean = clean.replace(regex, (m,p1,p2)=>(p1||'')+(p2||''));
+  });
+
+  // 第二轮：全局移除（针对嵌入在句子中的语气词）
+  const globalFillers = ['呢','吧','啊','嗯','哦','呃','嘛','呀','哈'];
+  globalFillers.forEach(fw=>{
+    // 匹配独立的语气词（前后是汉字或标点）
+    const regex = new RegExp(`([，,；;：:。！？!?\\s])${fw}([，,；;：:。！？!?\\s])`, 'g');
+    clean = clean.replace(regex, '$1$2');
+    // 句首的语气词
+    const regex2 = new RegExp(`^${fw}([，,；;：:。！？!?\\s])`, 'g');
+    clean = clean.replace(regex2, '$1');
+    // 句尾的语气词
+    const regex3 = new RegExp(`([，,；;：:。！？!?\\s])${fw}$`, 'g');
+    clean = clean.replace(regex3, '$1');
+  });
+
+  // 第三轮：清理"对吧""还有""然后"这种组合残留，以及嵌入在词中间的语气词
+  clean = clean.replace(/([，,；;：:。！？!?\s])对吧([，,；;：:。！？!?\s])/g, '$1$2');
+  clean = clean.replace(/([，,；;：:。！？!?\s])是不是([，,；;：:。！？!?\s])/g, '$1$2');
+  clean = clean.replace(/([，,；;：:。！？!?\s])对不对([，,；;：:。！？!?\s])/g, '$1$2');
+  clean = clean.replace(/([，,；;：:。！？!?\s])还有([，,；;：:。！？!?\s\u4e00-\u9fa5\d])/g, '$1$2');
+  clean = clean.replace(/([，,；;：:。！？!?\s])然后([，,；;：:。！？!?\s\u4e00-\u9fa5\d])/g, '$1$2');
+  // 处理"今天呢""昨天呢"这种嵌入（后面跟标点、空格或汉字）
+  clean = clean.replace(/([\u4e00-\u9fa5])呢([，,；;：:。！？!?\s\u4e00-\u9fa5])/g, '$1$2');
+  clean = clean.replace(/([\u4e00-\u9fa5])吧([，,；;：:。！？!?\s\u4e00-\u9fa5])/g, '$1$2');
+  clean = clean.replace(/([\u4e00-\u9fa5])啊([，,；;：:。！？!?\s\u4e00-\u9fa5])/g, '$1$2');
+  clean = clean.replace(/([\u4e00-\u9fa5])嗯([，,；;：:。！？!?\s\u4e00-\u9fa5])/g, '$1$2');
+
+  // 第四轮：清理重复标点和多余空格
+  clean = clean.replace(/[,，。！？!?\s]{2,}/g,'，');
+  clean = clean.replace(/^[,，。！？!?\s]+/,'');
+  clean = clean.replace(/[,，。！？!?\s]+$/,'');
+  clean = clean.replace(/([，。！？])([，。！？])/g,'$1');
+  clean = clean.replace(/，([，。！？])/g,'$1');
+  clean = clean.trim();
+
+  // 第二步：分句
+  const rawSentences = clean.split(/[。！？!?\n]+/).map(s=>s.trim()).filter(s=>s.length>=3);
+  // 再按逗号分短句，保留较长的
+  const sentences = [];
+  rawSentences.forEach(s=>{
+    if(s.length > 40){
+      const parts = s.split(/[，,；;]+/).map(p=>p.trim()).filter(p=>p.length>=3);
+      sentences.push(...parts);
+    } else { sentences.push(s); }
+  });
+
+  // 第三步：识别步骤关键词，标记每个句子
+  const stepMarkers = [
+    {kw:['第一步','第1步','首先','第一步是','先','开头'], level:1, label:'Step 1'},
+    {kw:['第二步','第2步','接着','接下来','然后','其次','再','第二步是'], level:2, label:'Step 2'},
+    {kw:['第三步','第3步','再然后','然后呢','第三步是'], level:3, label:'Step 3'},
+    {kw:['第四步','第4步','接下来','第四步是'], level:4, label:'Step 4'},
+    {kw:['第五步','第5步','第五步是'], level:5, label:'Step 5'},
+    {kw:['第六步','第6步','第六步是'], level:6, label:'Step 6'},
+    {kw:['第七步','第7步','第七步是'], level:7, label:'Step 7'},
+    {kw:['最后','最后一步','最后是','收尾','总结','结尾'], level:99, label:'最后'},
+  ];
+
+  const taggedSentences = sentences.map((s,i)=>{
+    let level = null, label = '';
+    for(const m of stepMarkers){
+      if(m.kw.some(k=>s.includes(k))){ level=m.level; label=m.label; break; }
+    }
+    return {text:s, level, label, index:i};
+  });
+
+  // 第四步：将句子组装为步骤
+  const steps = [];
+  let currentStep = null;
+  taggedSentences.forEach(ts=>{
+    if(ts.level !== null){
+      if(currentStep && currentStep.content.length>0){ steps.push(currentStep); }
+      currentStep = {title: ts.text.slice(0,40), content: [ts.text], level: ts.level, label: ts.label};
+    } else if(currentStep){
+      currentStep.content.push(ts.text);
+    } else {
+      // 开头没有步骤标记的句子归为"概述"
+      if(steps.length===0){ steps.push({title:'概述',content:[ts.text],level:0,label:'概述'}); }
+      else{ steps[steps.length-1].content.push(ts.text); }
+    }
+  });
+  if(currentStep && currentStep.content.length>0) steps.push(currentStep);
+
+  // 如果没有识别到步骤标记，按序号/自然段拆分
+  if(steps.length <= 1){
+    const altSteps = [];
+    sentences.forEach((s,i)=>{
+      altSteps.push({title:s.slice(0,40), content:[s], level:i+1, label:`第${i+1}步`});
+    });
+    steps.length = 0; steps.push(...altSteps);
+  }
+
+  // 第五步：提取关键数据
+  const keyData = [];
+  const dataPatterns = [
+    {re:/(\d+(?:\.\d+)?)\s*[%％]/g, type:'百分比'},
+    {re:/(\d+(?:\.\d+)?)\s*[元块个只件次遍天年月周小时分钟秒]/g, type:'数量'},
+    {re:/(\d+(?:\.\d+)?)\s*[度℃℉]/g, type:'温度'},
+    {re:/(\d+(?:\.\d+)?)\s*[克千克斤两吨毫升升]/g, type:'重量/容量'},
+    {re:/(\d+(?:\.\d+)?)\s*[厘米米千米毫米]/g, type:'长度'},
+    {re:/([1-9]\d{1,3})\s*[万億亿]/g, type:'大数'},
+    {re:/[¥￥$]\s*\d+(?:\.\d+)?/g, type:'金额'},
+  ];
+  const seenData = new Set();
+  sentences.forEach(s=>{
+    dataPatterns.forEach(dp=>{
+      let m;
+      while((m=dp.re.exec(s))!==null){
+        const val = m[0].trim();
+        if(!seenData.has(val)){
+          seenData.add(val);
+          keyData.push({value:val, type:dp.type, context: s.slice(0,60)});
+        }
+      }
+    });
+  });
+
+  // 第六步：统计
+  const stats = {
+    originalLen: text.length,
+    cleanLen: clean.length,
+    totalSteps: steps.length,
+    keyNumbers: keyData.length,
+    reduction: Math.round((1 - clean.length / text.length) * 100),
+  };
+
+  return { steps, keyData, stats };
+}
+
+function tuView(id){
+  const t = DB.get('tutorials',[]).find(x=>x.id===id);
+  if(!t) return;
+  const stepsHtml = t.steps.map((s,i)=>`
+    <div style="padding:12px;background:#f8f6ea;border-radius:8px;margin-bottom:8px;border-left:3px solid ${['#c8d4b8','#7a8c6a','#f0e2a9','#bccdd4','#cab8d4','#e8d4b8','#e8c8c8'][i%7]}">
+      <div style="font-weight:700;color:var(--green-deep);margin-bottom:6px;font-size:14px">${s.label}：${s.title}</div>
+      <div style="font-size:13px;line-height:1.8;color:var(--text-main)">${s.content.join('；')}</div>
+    </div>
+  `).join('');
+
+  const dataHtml = t.keyData.length? `
+    <div class="card-title" style="margin-top:14px">📈 关键数据</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+      ${t.keyData.map(d=>`
+        <div style="background:var(--yellow-soft);padding:6px 12px;border-radius:6px;font-size:13px">
+          <span style="color:var(--text-sub);font-size:11px">${d.type}</span>
+          <span style="font-weight:700;margin-left:4px;color:var(--text-main)">${d.value}</span>
+        </div>
+      `).join('')}
+    </div>
+  ` : '';
+
+  openModal('🎓 '+t.title,`
+    <div style="font-size:12px;color:var(--text-sub);margin-bottom:10px">
+      ${t.date} · ${t.url?'<a href="'+t.url+'" target="_blank" style="color:var(--green-deep)">原链接</a> · ':''}
+      📊 ${t.stats.totalSteps}步 · 📈 ${t.stats.keyNumbers}个数据 · 原文${t.stats.originalLen}字 → ${t.stats.cleanLen}字精简
+    </div>
+
+    <div class="card-title">📋 步骤分解</div>
+    ${stepsHtml}
+    ${dataHtml}
+
+    <details style="margin-top:12px">
+      <summary style="font-size:12px;color:var(--text-sub);cursor:pointer">📄 查看原文</summary>
+      <div style="background:#f4f6ec;padding:10px;border-radius:6px;font-size:12px;color:var(--text-sub);margin-top:8px;max-height:200px;overflow-y:auto;white-space:pre-wrap">${t.text}</div>
+    </details>
+
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <button class="btn btn-yellow" onclick="tuToTopic('${t.id}');closeModal()">存为选题</button>
+      <button class="btn btn-blue" onclick="tuCopy('${t.id}')">复制步骤</button>
+      <button class="btn-ghost" onclick="closeModal()">关闭</button>
+    </div>
+  `);
+}
+
+function tuToTopic(id){
+  const t = DB.get('tutorials',[]).find(x=>x.id===id);
+  if(!t) return;
+  const creates = DB.get('creates',[]);
+  creates.push({id:uid(), title:'教程: '+t.title.slice(0,25), desc:'教程分解 '+t.date+' · '+t.stats.totalSteps+'个步骤', status:'待用'});
+  DB.set('creates',creates);
+  toast('已存入选题库');
+}
+
+function tuCopy(id){
+  const t = DB.get('tutorials',[]).find(x=>x.id===id);
+  if(!t) return;
+  let text = `【${t.title}】\n\n`;
+  t.steps.forEach(s=>{ text += `${s.label}：${s.title}\n${s.content.join('；')}\n\n`; });
+  if(t.keyData.length){
+    text += '关键数据：\n';
+    t.keyData.forEach(d=>{ text += `  ${d.type}：${d.value}\n`; });
+  }
+  navigator.clipboard.writeText(text);
+  toast('已复制到剪贴板');
+}
+
+function tuDel(id){
+  if(!confirm('删除这条教程分解?'))return;
+  DB.set('tutorials',DB.get('tutorials',[]).filter(t=>t.id!==id));
+  renderModule();
+}
+
+/* ========================================================
+   设置: 模块开关与重命名
+======================================================== */
+function openSettings(){
+  const html=settings.modules.map((m,i)=>{
+    const def=MODULES_DEF.find(d=>d.id===m.id);
+    return `<div class="mod-row" draggable="true" ondragstart="modDragStart(${i})" ondragover="modDragOver(event)" ondrop="modDrop(${i})" style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:var(--bg-card)">
+      <span style="cursor:grab;color:var(--text-light);font-size:16px" title="拖拽排序">⠿</span>
+      <span style="font-size:20px">${def.icon}</span>
+      <input class="input" value="${m.name}" onchange="settings.modules[${i}].name=this.value;DB.set('settings',settings)" style="flex:1">
+      <label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" ${m.enabled?'checked':''} onchange="settings.modules[${i}].enabled=this.checked;DB.set('settings',settings)">开</label>
+    </div>`;
+  }).join('');
+  const curTheme=DB.get('theme_colors',null);
+  openModal('⚙️ 模块设置',`
+    <div style="font-size:12px;color:var(--text-sub);margin-bottom:10px">拖拽 ⠿ 调整模块顺序；可自定义名称、开关模块。关闭后侧边栏不显示。</div>
+    ${html}
+
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+      <div class="card-title">🎨 主题色（上传图片提取，小清新莫兰迪）</div>
+      <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px">上传一张喜欢的图片，自动提取主色并调成柔和莫兰迪风；也可一键还原默认。</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input type="file" id="theme-img" accept="image/*" onchange="themeFromImage()" style="font-size:12px">
+        <button class="btn btn-ghost btn-sm" onclick="resetTheme()">还原默认</button>
+        ${curTheme?`<span class="badge" style="width:20px;height:20px;border-radius:50%;background:${curTheme.green}"></span>`:''}
+      </div>
+    </div>
+
+    <div style="margin-top:16px;display:flex;gap:8px">
+      <button class="btn" style="flex:1" onclick="applySettingsOrder();renderNav();renderModule();closeModal();toast('已应用')">应用</button>
+      <button class="btn-ghost" onclick="if(confirm('恢复默认?')){settings={modules:MODULES_DEF.map(m=>({id:m.id,name:m.name,enabled:true}))};DB.set('settings',settings);location.reload();}">恢复默认</button>
+    </div>
+  `);
+}
+let _dragIdx=-1;
+function modDragStart(i){ _dragIdx=i; }
+function modDragOver(e){ e.preventDefault(); }
+function modDrop(i){
+  if(_dragIdx<0||_dragIdx===i)return;
+  const arr=settings.modules;
+  const [m]=arr.splice(_dragIdx,1);
+  arr.splice(i,0,m);
+  DB.set('settings',settings);
+  _dragIdx=-1;
+  openSettings(); // 重渲染
+}
+function applySettingsOrder(){ /* 顺序已实时保存 */ }
+
+/* 主题：图片取色 → 莫兰迪化 */
+function themeFromImage(){
+  const f=document.getElementById('theme-img').files[0];
+  if(!f)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      const cv=document.createElement('canvas');
+      const w=cv.width=Math.min(80,img.width), h=cv.height=Math.min(80,img.height);
+      const ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,w,h);
+      let r=0,g=0,b=0,n=0;
+      const data=ctx.getImageData(0,0,w,h).data;
+      for(let i=0;i<data.length;i+=4){ r+=data[i];g+=data[i+1];b+=data[i+2];n++; }
+      r=Math.round(r/n);g=Math.round(g/n);b=Math.round(b/n);
+      const mor=morandi(r,g,b);
+      DB.set('theme_colors',mor);
+      applyTheme(mor);
+      toast('已应用新主题色');
+      openSettings();
+    };
+    img.src=reader.result;
+  };
+  reader.readAsDataURL(f);
+}
+/* 把任意RGB转成低饱和高亮度莫兰迪色 */
+function morandi(r,g,b){
+  // 转HSL
+  r/=255;g/=255;b/=255;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b);
+  let h,s,l=(max+min)/2;
+  if(max===min){h=s=0;}
+  else{
+    const d=max-min;
+    s=l>0.5? d/(2-max-min): d/(max+min);
+    switch(max){
+      case r:h=(g-b)/d+(g<b?6:0);break;
+      case g:h=(b-r)/d+2;break;
+      default:h=(r-g)/d+4;
+    }
+    h/=6;
+  }
+  // 降饱和、提亮度，逼近莫兰迪
+  s=Math.min(0.28, s*0.5);
+  l=Math.max(0.72, Math.min(0.88, l+0.18));
+  const base=hsl2rgb(h,s,l);
+  const deep=hsl2rgb(h,s+0.06,Math.max(0.42,l-0.28));
+  const soft=hsl2rgb(h,s+0.02,Math.min(0.9,l+0.04));
+  const hex=c=>'#'+c.map(x=>Math.round(x).toString(16).padStart(2,'0')).join('');
+  return {
+    'bg-main': hex(hsl2rgb(h,0.08,0.95)),
+    'bg-card': '#fdfbf3',
+    'bg-sidebar': hex(hsl2rgb(h,0.12,0.90)),
+    'green-deep': hex(deep),
+    'green-soft': hex(soft),
+    'accent': hex(base),
+  };
+}
+function hsl2rgb(h,s,l){
+  let r,g,b;
+  if(s===0){r=g=b=l;}
+  else{
+    const hue2rgb=(p,q,t)=>{ if(t<0)t+=1; if(t>1)t-=1;
+      if(t<1/6)return p+(q-p)*6*t; if(t<1/2)return q;
+      if(t<2/3)return p+(q-p)*(2/3-t)*6; return p; };
+    const q=l<0.5?l*(1+s):l+s-l*s; const p=2*l-q;
+    r=hue2rgb(p,q,h+1/3);g=hue2rgb(p,q,h);b=hue2rgb(p,q,h-1/3);
+  }
+  return [r*255,g*255,b*255];
+}
+function applyTheme(t){
+  if(!t)return;
+  const root=document.documentElement;
+  root.style.setProperty('--bg-main',t['bg-main']||'#f5f3e7');
+  root.style.setProperty('--bg-card',t['bg-card']||'#fdfbf3');
+  root.style.setProperty('--bg-sidebar',t['bg-sidebar']||'#e8ead8');
+  root.style.setProperty('--green-deep',t['green-deep']||'#7a8c6a');
+  root.style.setProperty('--green-soft',t['green-soft']||'#c8d4b8');
+  document.querySelector('meta[name=theme-color]')?.setAttribute('content',t['green-soft']||'#d4e4d4');
+}
+function resetTheme(){
+  DB.del('theme_colors');
+  const root=document.documentElement;
+  ['--bg-main','--bg-card','--bg-sidebar','--green-deep','--green-soft'].forEach(v=>root.style.removeProperty(v));
+  toast('已还原默认主题');
+  openSettings();
+}
+
+/* 导出导入 */
+function exportAll(){
+  const data={};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k.startsWith('hehe_'))data[k]=localStorage.getItem(k);
+  }
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='贺贺工作台备份_'+today()+'.json';
+  a.click();
+  toast('已导出备份');
+}
+function importAll(){
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='.json';
+  inp.onchange=e=>{
+    const f=e.target.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=()=>{
+      try{
+        const data=JSON.parse(r.result);
+        if(!confirm('将覆盖现有数据，确认导入?'))return;
+        Object.entries(data).forEach(([k,v])=>localStorage.setItem(k,v));
+        toast('已导入，刷新中...');setTimeout(()=>location.reload(),800);
+      }catch(err){toast('文件格式错误');}
+    };
+    r.readAsText(f);
+  };
+  inp.click();
+}
+
+/* ========================================================
+   初始化
+======================================================== */
+function init(){
+  // 合并：把新定义的模块补进已保存的 settings（旧用户数据兼容）
+  const existing=DB.get('settings',null);
+  if(existing&&existing.modules){
+    const ids=existing.modules.map(m=>m.id);
+    MODULES_DEF.forEach(d=>{ if(!ids.includes(d.id)) existing.modules.push({id:d.id,name:d.name,enabled:true}); });
+    settings=existing; DB.set('settings',settings);
+  }
+  const savedTheme=DB.get('theme_colors',null);
+  if(savedTheme)applyTheme(savedTheme);
+  renderNav();
+  renderModule();
+  // PWA: 注册service worker (内联，无需独立文件)
+  if('serviceWorker' in navigator){
+    const swCode=`
+      const C='hehe-v1';
+      self.addEventListener('install',e=>{self.skipWaiting()});
+      self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim())});
+      self.addEventListener('fetch',e=>{
+        e.respondWith(
+          caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{
+            if(resp.ok&&e.request.method==='GET'){
+              const c=resp.clone();
+              caches.open(C).then(cache=>cache.put(e.request,c));
+            }
+            return resp;
+          }).catch(()=>caches.match(e.request)))
+        );
+      });
+    `;
+    const swUrl=URL.createObjectURL(new Blob([swCode],{type:'application/javascript'}));
+    navigator.serviceWorker.register(swUrl).catch(()=>{});
+  }
+}
+init();
+</script>
+</body>
+</html>
