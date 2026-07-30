@@ -1,1 +1,1 @@
-{"name": "贺贺工作台", "short_name": "贺贺", "start_url": "/hehe-workbench/", "scope": "/hehe-workbench/", "display": "standalone", "background_color": "#f5f3e7", "theme_color": "#d4e4d4", "icons": [{"src": "icon.png", "sizes": "512x512", "type": "image/png"}]}
+{"name": "贺贺工作台", "short_name": "贺贺", "start_url": "/hehe-workbench/", "scope": "/hehe-workbench/", "display": "standalone", "background_color": "#FBF7F1", "theme_color": "#5F7A5A", "icons": [{"src": "icon.png", "sizes": "512x512", "type": "image/png"}]}
