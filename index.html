@@ -2302,26 +2302,9 @@ function init(){
   if(savedTheme)applyTheme(savedTheme);
   renderNav();
   renderModule();
-  // PWA: 注册service worker (内联，无需独立文件)
+  // PWA: 注册 service worker (独立文件，iOS 要求)
   if('serviceWorker' in navigator){
-    const swCode=`
-      const C='hehe-v1';
-      self.addEventListener('install',e=>{self.skipWaiting()});
-      self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim())});
-      self.addEventListener('fetch',e=>{
-        e.respondWith(
-          caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{
-            if(resp.ok&&e.request.method==='GET'){
-              const c=resp.clone();
-              caches.open(C).then(cache=>cache.put(e.request,c));
-            }
-            return resp;
-          }).catch(()=>caches.match(e.request)))
-        );
-      });
-    `;
-    const swUrl=URL.createObjectURL(new Blob([swCode],{type:'application/javascript'}));
-    navigator.serviceWorker.register(swUrl).catch(()=>{});
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
   }
 }
 init();
