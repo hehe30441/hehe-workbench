@@ -2310,56 +2310,79 @@ function init(){
 init();
 </script>
 
-<!-- PWA 安装提示 -->
-<div id="pwa-install-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:linear-gradient(135deg,#4a90d9,#67b8e0);color:#fff;padding:12px 16px;text-align:center;font-family:-apple-system,sans-serif;font-size:14px;box-shadow:0 2px 10px rgba(0,0,0,0.2);">
-  <span style="margin-right:8px;">📱</span><b>把"贺贺"添加到手机桌面，像 App 一样用！</b>
-  <button id="pwa-install-btn" style="margin-left:10px;background:#fff;color:#4a90d9;border:none;border-radius:20px;padding:6px 18px;font-weight:bold;font-size:13px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.2);">立即添加</button>
-  <button id="pwa-dismiss-btn" style="margin-left:6px;background:transparent;color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.5);border-radius:20px;padding:4px 12px;font-size:12px;cursor:pointer;">稍后</button>
+<!-- PWA 安装提示 V2 -->
+<div id="pwa-install-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 16px;text-align:center;font-family:-apple-system,'Helvetica Neue',sans-serif;font-size:14px;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+  <div style="font-size:18px;margin-bottom:6px;">📱 添加到手机桌面</div>
+  <div style="font-size:12px;opacity:0.9;margin-bottom:10px;">像 App 一样使用，全屏无浏览器栏</div>
+  <div style="display:flex;justify-content:center;gap:10px;">
+    <button id="pwa-install-btn" style="background:#fff;color:#667eea;border:none;border-radius:25px;padding:8px 24px;font-weight:bold;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.2);">✨ 一键添加</button>
+    <button id="pwa-dismiss-btn" style="background:transparent;color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.4);border-radius:25px;padding:6px 16px;font-size:12px;cursor:pointer;">知道了</button>
+  </div>
 </div>
+
+<!-- iOS 添加到主屏幕 引导遮罩 -->
+<div id="ios-guide-overlay" style="display:none;position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.85);color:#fff;padding:20px;text-align:center;font-family:-apple-system,sans-serif;">
+  <div style="margin-top:80px;font-size:28px;margin-bottom:20px;">📲</div>
+  <div style="font-size:22px;font-weight:bold;margin-bottom:16px;">添加"贺贺"到主屏幕</div>
+  <div style="font-size:15px;line-height:2;opacity:0.9;text-align:left;max-width:320px;margin:0 auto;background:rgba(255,255,255,0.1);border-radius:16px;padding:20px;">
+    <div>🔹 <b>第一步</b></div><div style="padding-left:20px;font-size:14px;">点击 Safari <b>底部中间的<br>➕ 加号按钮</b></div>
+    <div style="margin-top:12px;">🔹 <b>第二步</b></div><div style="padding-left:20px;font-size:14px;">选择 <b>"添加到主屏幕"</b></div>
+    <div style="margin-top:12px;">🔹 <b>第三步</b></div><div style="padding-left:20px;font-size:14px;">点击右上角 <b>"添加"</b></div>
+  </div>
+  <div style="margin-top:30px;font-size:13px;opacity:0.6;">提示：找不到加号？试试在地址栏输入完整网址后等待页面完全加载</div>
+  <button id="ios-guide-close" style="margin-top:24px;background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:25px;padding:10px 40px;font-size:15px;cursor:pointer;">我知道了</button>
+</div>
+
 <script>
 (function(){
   var banner=document.getElementById('pwa-install-banner');
   var btn=document.getElementById('pwa-install-btn');
   var dismiss=document.getElementById('pwa-dismiss-btn');
-  if(!banner||!btn)return;
-  
-  // 检查是否已安装或已关闭
+  var overlay=document.getElementById('ios-guide-overlay');
+  var overlayClose=document.getElementById('ios-guide-close');
+  if(!banner)return;
+
   if(localStorage.getItem('hehe_pwa_dismissed'))return;
-  
-  // iOS Safari 检测
+
   var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
   var isStandalone=window.navigator.standalone===true;
-  var isInWebAppiOS=(window.navigator.standalone===true);
-  var isInWebAppChrome=(window.matchMedia('(display-mode:standalone)').matches);
-  
-  // 如果还不是 standalone 模式，显示提示
-  if(!isStandalone&&!isInWebAppiOS&&!isInWebAppChrome){
-    // 延迟 3 秒显示，让用户先看到内容
-    setTimeout(function(){banner.style.display='block';},3000);
+  var isStandaloneDisplay=window.matchMedia('(display-mode:standalone)').matches;
+
+  if(!isStandalone&&!isStandaloneDisplay){
+    setTimeout(function(){banner.style.display='block';},2500);
   }
-  
+
   btn.addEventListener('click',function(){
+    banner.style.display='none';
     if(isIOS){
-      // iOS: 显示自定义引导弹窗
-      alert('📱 添加步骤：\n\n1️⃣ 点击底部的"分享"按钮（方框+向上箭头）\n2️⃣ 向下滑，找到"添加到主屏幕"\n3️⃣ 点"添加"即可！\n\n如果找不到"添加到主屏幕"，请：\n• 确保用的是 Safari 浏览器（不是微信/其他App内）\n• 完全关闭 Safari 后重新打开此页面');
+      if(overlay)overlay.style.display='block';
     } else {
-      // Android/其他: 尝试触发 prompt
       window.deferredPrompt&&window.deferredPrompt.prompt();
     }
-    banner.style.display='none';
     localStorage.setItem('hehe_pwa_dismissed','1');
   });
-  
+
   dismiss.addEventListener('click',function(){
     banner.style.display='none';
     localStorage.setItem('hehe_pwa_dismissed','1');
   });
-  
-  // 监听 beforeinstallprompt (Android Chrome)
+
+  if(overlayClose){
+    overlayClose.addEventListener('click',function(){
+      if(overlay)overlay.style.display='none';
+    });
+  }
+
+  if(overlay){
+    overlay.addEventListener('click',function(e){
+      if(e.target===overlay)overlay.style.display='none';
+    });
+  }
+
   window.addEventListener('beforeinstallprompt',function(e){
     e.preventDefault();
     window.deferredPrompt=e;
-    setTimeout(function(){banner.style.display='block';},3000);
+    setTimeout(function(){banner.style.display='block';},2500);
   });
 })();
 </script>
