@@ -2371,6 +2371,7 @@ init();
   var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
   var isSA=(window.navigator.standalone===true);
   var isSD=window.matchMedia('(display-mode:standalone)').matches;
+  // iOS 且非全屏模式时显示（安卓用户如果也想用书签也可手动访问）
   if(isIOS&&!isSA&&!isSD){setTimeout(function(){b.style.display='block';},1800);}
 })();
 </script>
